@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insight</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  body{font:15px system-ui,sans-serif;margin:0;background:#f6f7f9;color:#1c2024}
+  main{max-width:960px;margin:0 auto;padding:24px}
+  .card{background:#fff;border:1px solid #e3e6ea;border-radius:10px;padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}
+  .label{color:#6b7480;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .value{font-size:24px;font-weight:600;margin-top:4px}
+  .chip{display:inline-block;padding:2px 10px;border-radius:99px;background:#fde2e2;color:#a11;font-size:12px;margin-right:6px}
+  table{width:100%;border-collapse:collapse} td,th{text-align:left;padding:6px 4px;border-bottom:1px solid #eee}
+  input,button{font:inherit;padding:8px 10px;margin:4px 0} button{cursor:pointer}
+  .row{display:flex;justify-content:space-between;align-items:center}
+  .muted{color:#6b7480} .err{color:#a11}
+  #login{max-width:340px;margin:80px auto}
+</style>
+</head>
+<body>
+<main>
+  <div id="login" class="card">
+    <h2>Insight</h2>
+    <input id="email" type="email" placeholder="Email" autocomplete="username" style="width:100%">
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password" style="width:100%">
+    <button id="signin" style="width:100%">Sign in</button>
+    <div id="login-err" class="err"></div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="row"><h2 id="org"></h2><button id="signout">Sign out</button></div>
+    <div id="flags"></div>
+    <div id="cards" class="grid"></div>
+    <div class="card"><div class="label">Active users, last 30 days</div><canvas id="chart" height="90"></canvas></div>
+    <div class="grid">
+      <div class="card"><div class="label">Events by feature</div><table id="features"></table></div>
+      <div class="card"><div class="label">Ask about your usage</div>
+        <input style="width:100%" placeholder="Coming soon" disabled>
+        <div class="muted">The analyst arrives on Day 4.</div></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const CONFIG = {
+  API: "http://localhost:8765",
+  SUPABASE_URL: "https://sqjlvhraizhgdqudltnz.supabase.co",
+  ANON_KEY: "sb_publishable_z8smYxnbucH7OdWNpBM0oQ_axOX3aQ4"      // public by design. Never put the secret key here.
+};
+let session = null, chart = null;
+const $ = id => document.getElementById(id);
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+
+async function authCall(grant, body) {
+  const r = await fetch(`${CONFIG.SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
+    method: "POST", headers: {apikey: CONFIG.ANON_KEY, "Content-Type": "application/json"},
+    body: JSON.stringify(body)});
+  if (!r.ok) throw new Error("Sign-in failed");
+  session = await r.json();
+}
+
+async function api(path, retried = false) {
+  const r = await fetch(CONFIG.API + path, {headers: {Authorization: `Bearer ${session.access_token}`}});
+  if (r.status === 401 && !retried) {
+    await authCall("refresh_token", {refresh_token: session.refresh_token});
+    return api(path, true);
+  }
+  if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.error?.message || r.statusText); }
+  return r.json();
+}
+
+const money = c => (c / 100).toLocaleString(undefined, {style: "currency", currency: "USD"});
+
+async function loadDashboard() {
+  const [me, digest, daily, feats] = await Promise.all([
+    api("/v1/me"), api("/v1/digest").catch(() => null), api("/v1/usage/daily"), api("/v1/usage/features")]);
+  $("org").textContent = `${me.org_name} · ${me.plan}`;
+
+  const flags = $("flags"); flags.replaceChildren();
+  const cards = $("cards"); cards.replaceChildren();
+  if (digest) {
+    if (digest.flag_usage_drop) flags.append(el("span", "Usage drop vs same weekday", "chip"));
+    if (digest.flag_usage_spike) flags.append(el("span", "Usage spike", "chip"));
+    if (digest.flag_canceled) flags.append(el("span", "Subscription canceled", "chip"));
+    [["Active users", digest.active_users],
+     ["Same weekday avg", digest.avg_active_same_weekday ?? "-"],
+     ["Events", digest.events],
+     ["Weekly active", digest.weekly_active_users],
+     ["Top feature", digest.top_feature ?? "-"],
+     ["MRR", digest.mrr_cents == null ? "-" : money(digest.mrr_cents)]
+    ].forEach(([l, v]) => { const c = el("div", undefined, "card"); c.append(el("div", l, "label"), el("div", String(v), "value")); cards.append(c); });
+  }
+
+  chart?.destroy();
+  chart = new Chart($("chart"), {type: "line",
+    data: {labels: daily.map(d => d.usage_date), datasets: [{data: daily.map(d => d.active_users), tension: .25}]},
+    options: {plugins: {legend: {display: false}}}});
+
+  const t = $("features"); t.replaceChildren();
+  feats.forEach(f => { const tr = el("tr"); tr.append(el("td", f.feature), el("td", String(f.events))); t.append(tr); });
+}
+
+$("signin").onclick = async () => {
+  $("login-err").textContent = "";
+  try {
+    await authCall("password", {email: $("email").value, password: $("password").value});
+    $("login").hidden = true; $("app").hidden = false;
+    await loadDashboard();
+  } catch (e) { $("login").hidden = false; $("app").hidden = true; $("login-err").textContent = e.message; }
+};
+$("signout").onclick = () => { session = null; $("app").hidden = true; $("login").hidden = false; $("password").value = ""; };
+</script>
+</body>
+</html>

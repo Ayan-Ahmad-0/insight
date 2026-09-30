@@ -11,5 +11,10 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: pytest -q
+      
         env:
-          DATABASE_URL: ${{ postgresql://postgres.jdfrrugkepqjgnmkmiwz:[YOUR-PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:5432/postgres}}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+          SEED_PASSWORD: ${{ secrets.SEED_PASSWORD }}
