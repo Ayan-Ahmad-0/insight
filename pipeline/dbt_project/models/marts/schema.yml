@@ -1,0 +1,27 @@
+version: 2
+models:
+  - name: daily_feature_usage
+    columns:
+      - name: org_id
+        data_tests: [not_null]
+  - name: daily_org_activity
+    columns:
+      - name: org_id
+        data_tests: [not_null]
+      - name: usage_date
+        data_tests: [not_null]
+  - name: mrr_daily
+    columns:
+      - name: mrr_cents
+        data_tests: [not_null]
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['active', 'canceled']
+  - name: morning_digest
+    columns:
+      - name: org_id
+        data_tests: [not_null]
+      - name: digest_date
+        data_tests: [not_null]

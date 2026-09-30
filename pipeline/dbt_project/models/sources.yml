@@ -1,0 +1,15 @@
+version: 2
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: feature_events
+        loaded_at_field: occurred_at
+        freshness:
+          warn_after: {count: 30, period: hour}
+          error_after: {count: 54, period: hour}
+      - name: subscription_events
+  - name: app
+    schema: app
+    tables:
+      - name: orgs

@@ -2,3 +2,6 @@
 __pycache__/
 .pytest_cache/
 .venv/
+pipeline/dbt_project/target/
+pipeline/dbt_project/logs/
+pipeline/dbt_project/dbt_packages/
