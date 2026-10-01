@@ -13,7 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from delete_org import DeleteError, delete_org, inventory  # noqa: E402
 
 load_dotenv()
-
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("SUPABASE_SERVICE_ROLE_KEY"),
+    reason="needs the Supabase admin API (runs locally, not in CI)")
 
 @pytest.fixture
 def conn():
