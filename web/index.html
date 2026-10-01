@@ -18,6 +18,10 @@
   .row{display:flex;justify-content:space-between;align-items:center}
   .muted{color:#6b7480} .err{color:#a11}
   #login{max-width:340px;margin:80px auto}
+  #ask-form{display:flex;gap:8px} #ask-form input{flex:1;margin:0} #ask-form button{margin:0}
+  .qa{margin-top:12px;padding-top:12px;border-top:1px solid #eee}
+  .q{font-weight:600} .a{white-space:pre-wrap;margin-top:4px}
+  .chips button{background:#eef1f5;border:1px solid #d8dde5}
 </style>
 </head>
 <body>
@@ -38,8 +42,14 @@
     <div class="grid">
       <div class="card"><div class="label">Events by feature</div><table id="features"></table></div>
       <div class="card"><div class="label">Ask about your usage</div>
-        <input style="width:100%" placeholder="Coming soon" disabled>
-        <div class="muted">The analyst arrives on Day 4.</div></div>
+        <div id="ask-form">
+          <input id="ask-q" type="text" maxlength="500" placeholder="Ask about your usage" aria-label="Ask about your usage">
+          <button id="ask-btn" type="button">Ask</button>
+        </div>
+        <div class="row muted"><span id="ask-status" aria-live="polite"></span><span><span id="ask-count">0</span>/500</span></div>
+        <div id="ask-hint" class="chips"></div>
+        <div id="ask-log" aria-live="polite"></div>
+      </div>
     </div>
   </div>
 </main>
@@ -62,11 +72,13 @@ async function authCall(grant, body) {
   session = await r.json();
 }
 
-async function api(path, retried = false) {
-  const r = await fetch(CONFIG.API + path, {headers: {Authorization: `Bearer ${session.access_token}`}});
+async function api(path, opts = {}, retried = false) {
+  const r = await fetch(CONFIG.API + path, {
+    ...opts,
+    headers: {...(opts.headers || {}), Authorization: `Bearer ${session.access_token}`}});
   if (r.status === 401 && !retried) {
     await authCall("refresh_token", {refresh_token: session.refresh_token});
-    return api(path, true);
+    return api(path, opts, true);
   }
   if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.error?.message || r.statusText); }
   return r.json();
@@ -103,6 +115,50 @@ async function loadDashboard() {
   feats.forEach(f => { const tr = el("tr"); tr.append(el("td", f.feature), el("td", String(f.events))); t.append(tr); });
 }
 
+function tidy(t) {
+  return t.replace(/\*\*/g, "")
+          .replace(/\[def:([a-z0-9_]+)\]/g, (m, id) => `(definition: ${id.replace(/_/g, " ")})`);
+}
+
+let asking = false;
+async function ask(question) {
+  question = question.trim();
+  if (asking || question.length < 3) return;
+  asking = true; $("ask-btn").disabled = true; $("ask-status").textContent = "Thinking…";
+  const slow = setTimeout(() => {
+    $("ask-status").textContent = "Still working… the server may be waking up, this can take up to a minute.";
+  }, 8000);
+  let text, isErr = false;
+  try {
+    const res = await api("/v1/ask", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({question})});
+    text = tidy(res.answer);
+  } catch (e) {
+    isErr = true;
+    text = e instanceof TypeError
+      ? "Couldn't reach the server. It may be waking up, try again in a minute."
+      : e.message;
+  } finally {
+    clearTimeout(slow); asking = false;
+    $("ask-btn").disabled = false; $("ask-status").textContent = "";
+  }
+  const box = el("div", undefined, "qa");
+  box.append(el("div", question, "q"), el("div", text, isErr ? "a err" : "a"));
+  $("ask-log").prepend(box);
+  if (!isErr) $("ask-q").value = "";
+  $("ask-count").textContent = $("ask-q").value.length;
+}
+
+$("ask-btn").onclick = () => ask($("ask-q").value);
+$("ask-q").addEventListener("keydown", e => { if (e.key === "Enter") ask($("ask-q").value); });
+$("ask-q").addEventListener("input", () => { $("ask-count").textContent = $("ask-q").value.length; });
+["Which feature was used most in the last 30 days?",
+ "How many active users did we have yesterday?",
+ "What does active user mean?"].forEach(q => {
+  const b = el("button", q); b.onclick = () => ask(q); $("ask-hint").append(b);
+});
+
 $("signin").onclick = async () => {
   $("login-err").textContent = "";
   try {
@@ -111,7 +167,7 @@ $("signin").onclick = async () => {
     await loadDashboard();
   } catch (e) { $("login").hidden = false; $("app").hidden = true; $("login-err").textContent = e.message; }
 };
-$("signout").onclick = () => { session = null; $("app").hidden = true; $("login").hidden = false; $("password").value = ""; };
+$("signout").onclick = () => { session = null; $("ask-log").replaceChildren(); $("app").hidden = true; $("login").hidden = false; $("password").value = ""; };
 </script>
 </body>
 </html>
