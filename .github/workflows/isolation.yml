@@ -18,7 +18,7 @@ jobs:
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      DATABASE_URL: ${{ vars.ISOLATION_DATABASE_URL }}
+      DATABASE_URL: postgresql://postgres:ci@localhost:5432/insight
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -40,10 +40,15 @@ jobs:
         run: |
           python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
           import xml.etree.ElementTree as ET
-          r = ET.parse("report.xml").getroot()
-          s = r if r.tag == "testsuite" else r[0]
-          t, f, e, k = (int(s.get(x, 0)) for x in ("tests", "failures", "errors", "skipped"))
-          print(f"## Isolation suite\n\n{t - f - e - k} passed, {f} failed, {e} errors, {k} skipped")
+          from pathlib import Path
+          report = Path("report.xml")
+          if not report.exists():
+            print("## Isolation suite\n\nTest report unavailable; pytest did not produce report.xml.")
+          else:
+            r = ET.parse(report).getroot()
+            s = r if r.tag == "testsuite" else r[0]
+            t, f, e, k = (int(s.get(x, 0)) for x in ("tests", "failures", "errors", "skipped"))
+            print(f"## Isolation suite\n\n{t - f - e - k} passed, {f} failed, {e} errors, {k} skipped")
           EOF
       - uses: actions/upload-artifact@v4
         if: always()
