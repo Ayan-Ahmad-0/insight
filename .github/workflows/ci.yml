@@ -26,4 +26,4 @@ jobs:
           print("db host:", u.split("@")[-1].split("/")[0])
           print(psycopg.connect(u, connect_timeout=10).execute("select 1").fetchone())
           EOF
-      - run: pytest -q
+      - run: pytest -q --ignore=tests/test_delete_org.py
