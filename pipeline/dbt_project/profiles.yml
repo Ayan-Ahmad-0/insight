@@ -10,4 +10,4 @@ insight:
       dbname: "{{ env_var('DBT_DBNAME') }}"
       schema: public
       threads: 4
-      sslmode: require
+      sslmode: prefer
