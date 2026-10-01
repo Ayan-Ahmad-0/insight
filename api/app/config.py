@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     database_url: str
     supabase_url: str
     supabase_jwt_secret: str | None = None   # only for legacy HS256 projects
-    cors_origins: str = "http://localhost:8080"
+    cors_origins: str = "https://insight-web.onrender.com"
     db_pool_max: int = 5
 
     @property
