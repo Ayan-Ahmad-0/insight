@@ -7,6 +7,9 @@ from . import errors
 from .config import settings
 from .db import pool
 from .routers import events, meta, metrics
+from fastapi.responses import JSONResponse
+from app.ai.analyst import AIError
+from app.routers import ask as ask_router
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(message)s")
 log = logging.getLogger("insight")
@@ -55,8 +58,13 @@ async def request_context(request: Request, call_next):
             "status": status,
             "ms": round((time.perf_counter() - start) * 1000),
         }))
-
+@app.exception_handler(AIError)
+async def ai_error_handler(request, exc: AIError):
+    return JSONResponse(status_code=exc.status, content={"error": {
+        "code": exc.code, "message": exc.message,
+        "request_id": getattr(request.state, "request_id", None)}})
 
 app.include_router(meta.router)
 app.include_router(metrics.router)
 app.include_router(events.router)
+app.include_router(ask_router.router)

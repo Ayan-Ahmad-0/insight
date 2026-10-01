@@ -29,6 +29,3 @@ def me(caller: Caller = Depends(get_caller)):
             "user_id": caller.user_id, "role": member["role"] if member else None}
 
 
-@router.post("/v1/ask", tags=["analyst"])
-def ask(body: AskIn, caller: Caller = Depends(get_caller)):
-    raise ApiError(501, "not_implemented", "The analyst arrives on Day 4.")
