@@ -1,0 +1,50 @@
+name: isolation
+on:
+  push:
+    branches: [main]
+  pull_request: {}
+
+jobs:
+  isolation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: insight
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: ${{ vars.ISOLATION_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -r requirements.txt
+      - name: Supabase-like roles
+        run: psql "$DATABASE_URL" -f scripts/ci_bootstrap.sql
+      - run: python scripts/apply_migrations.py
+      - run: python scripts/seed_ci.py
+      - run: python pipeline/generate_events.py --reset --yes --backfill-days 45
+      - run: python pipeline/run_dbt.py build
+      - name: Isolation tests
+        run: >
+          pytest tests/test_rls_coverage.py tests/test_isolation.py
+          tests/test_ingest.py tests/test_ai_isolation.py
+          -q --junitxml=report.xml
+      - name: Report
+        if: always()
+        run: |
+          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          r = ET.parse("report.xml").getroot()
+          s = r if r.tag == "testsuite" else r[0]
+          t, f, e, k = (int(s.get(x, 0)) for x in ("tests", "failures", "errors", "skipped"))
+          print(f"## Isolation suite\n\n{t - f - e - k} passed, {f} failed, {e} errors, {k} skipped")
+          EOF
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: isolation-report, path: report.xml}

@@ -1,0 +1,55 @@
+{
+  "auth_users": {
+    "37cf83b3-d61e-4747-8a9a-d14dc9bb9f39": "deleted"
+  },
+  "auth_users_remaining": 0,
+  "database_host": "aws-0-ap-south-1.pooler.supabase.com:5432",
+  "deleted_at": "2026-10-01T11:58:28.169160+00:00",
+  "not_covered": [
+    "Hosting request logs (Render) may contain the org id until their retention window ends.",
+    "Database backups / point-in-time recovery keep a copy until they expire.",
+    "A JWT issued before deletion stays valid until it expires (about 1 hour) but now matches no data."
+  ],
+  "operator": "Ayan Ahmed",
+  "org_id": "e117c8cc-735c-49b2-a32e-c9b32ad1fb34",
+  "org_name": "zz-delete-test-0681770c",
+  "receipt_version": 1,
+  "rows_after": {
+    "ai.calls": 0,
+    "ai.org_settings": 0,
+    "analytics.daily_feature_usage": 0,
+    "analytics.daily_org_activity": 0,
+    "analytics.morning_digest": 0,
+    "analytics.mrr_daily": 0,
+    "app.org_members": 0,
+    "app.orgs": 0,
+    "raw.feature_events": 0,
+    "raw.subscription_events": 0
+  },
+  "rows_before": {
+    "ai.calls": 1,
+    "ai.org_settings": 0,
+    "analytics.daily_feature_usage": 0,
+    "analytics.daily_org_activity": 1,
+    "analytics.morning_digest": 0,
+    "analytics.mrr_daily": 0,
+    "app.org_members": 1,
+    "app.orgs": 1,
+    "raw.feature_events": 3,
+    "raw.subscription_events": 1
+  },
+  "sha256": "3f481eeccd7718c0b7da0d4167d9a72b4f4057bc5c6cd80c7a6e6998630e7278",
+  "status": "complete",
+  "tables_scanned": [
+    "ai.calls",
+    "ai.org_settings",
+    "analytics.daily_feature_usage",
+    "analytics.daily_org_activity",
+    "analytics.morning_digest",
+    "analytics.mrr_daily",
+    "app.org_members",
+    "app.orgs",
+    "raw.feature_events",
+    "raw.subscription_events"
+  ]
+}
