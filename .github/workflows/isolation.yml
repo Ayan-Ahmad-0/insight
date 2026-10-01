@@ -19,11 +19,13 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:ci@localhost:5432/insight
+      DBT_SSLMODE: disable
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
       - run: pip install -r requirements.txt
+      
       - name: Supabase-like roles
         run: psql "$DATABASE_URL" -f scripts/ci_bootstrap.sql
       - run: python scripts/apply_migrations.py
