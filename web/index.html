@@ -3,54 +3,190 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Insight</title>
+<title>Insight · Product usage dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
-  body{font:15px system-ui,sans-serif;margin:0;background:#f6f7f9;color:#1c2024}
-  main{max-width:960px;margin:0 auto;padding:24px}
-  .card{background:#fff;border:1px solid #e3e6ea;border-radius:10px;padding:16px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}
-  .label{color:#6b7480;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-  .value{font-size:24px;font-weight:600;margin-top:4px}
-  .chip{display:inline-block;padding:2px 10px;border-radius:99px;background:#fde2e2;color:#a11;font-size:12px;margin-right:6px}
-  table{width:100%;border-collapse:collapse} td,th{text-align:left;padding:6px 4px;border-bottom:1px solid #eee}
-  input,button{font:inherit;padding:8px 10px;margin:4px 0} button{cursor:pointer}
-  .row{display:flex;justify-content:space-between;align-items:center}
-  .muted{color:#6b7480} .err{color:#a11}
-  #login{max-width:340px;margin:80px auto}
-  #ask-form{display:flex;gap:8px} #ask-form input{flex:1;margin:0} #ask-form button{margin:0}
-  .qa{margin-top:12px;padding-top:12px;border-top:1px solid #eee}
-  .q{font-weight:600} .a{white-space:pre-wrap;margin-top:4px}
-  .chips button{background:#eef1f5;border:1px solid #d8dde5}
+  :root{
+    --bg:#f4f6fb; --surface:#ffffff; --border:#e4e8f0; --text:#161b26; --muted:#667085;
+    --accent:#4f46e5; --accent-soft:#eef0ff; --accent-2:#06b6d4;
+    --good:#067647; --good-bg:#e7f6ee; --warn:#b54708; --warn-bg:#fff4e0; --bad:#b42318; --bad-bg:#fdeceb;
+    --shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0e1118; --surface:#171b26; --border:#272d3b; --text:#eef0f6; --muted:#9aa3b5;
+      --accent:#8b8cff; --accent-soft:#232842; --accent-2:#22d3ee;
+      --good:#6ee7a4; --good-bg:#12301f; --warn:#fbbf6a; --warn-bg:#3a2a10; --bad:#ff9b94; --bad-bg:#3b1a1a;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.3);
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  h1,h2,h3,p{margin:0}
+  [hidden]{display:none !important}
+  .muted{color:var(--muted)} .err{color:var(--bad)}
+
+  /* top bar */
+  .topbar{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;
+          padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:-.01em}
+  .logo{width:26px;height:26px;border-radius:8px;display:inline-block;
+        background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+  main{max-width:1000px;margin:0 auto;padding:28px 24px 48px}
+
+  /* buttons and inputs */
+  .btn{font:inherit;font-weight:600;border-radius:10px;padding:9px 16px;cursor:pointer;border:1px solid var(--border);
+       background:var(--surface);color:var(--text)}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),#6d63f5);color:#fff;border-color:transparent}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .btn:disabled{opacity:.55;cursor:not-allowed;filter:none}
+  input[type=text],input[type=email],input[type=password]{
+    font:inherit;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;
+    background:var(--surface);color:var(--text)}
+  input:focus,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
+
+  /* cards */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+  .card h3{font-size:16px;font-weight:650}
+  .card .sub{color:var(--muted);font-size:13px;margin:2px 0 14px}
+
+  /* login */
+  .login{min-height:calc(100vh - 80px);display:grid;place-items:center}
+  .login-card{width:100%;max-width:400px;padding:32px}
+  .login-card .brand{font-size:22px;margin-bottom:18px}
+  .login-card h1{font-size:20px;margin-bottom:4px}
+  .login-card .btn{width:100%;margin-top:20px;padding:11px}
+  #login-err{min-height:20px;margin-top:10px;font-size:14px}
+
+  /* dashboard header */
+  .hero{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+  .hero h1{font-size:28px;letter-spacing:-.02em}
+  .pill{display:inline-block;padding:4px 12px;border-radius:99px;background:var(--accent-soft);color:var(--accent);
+        font-size:13px;font-weight:600;text-transform:capitalize}
+  .section-head{margin:0 0 12px}
+  .section-head h2{font-size:18px;letter-spacing:-.01em}
+  .section-head p{color:var(--muted);font-size:13px}
+  section{margin-bottom:28px}
+
+  /* flags */
+  #flags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .chip{display:inline-block;padding:4px 12px;border-radius:99px;font-size:13px;font-weight:600}
+  .chip.bad{background:var(--bad-bg);color:var(--bad)}
+  .chip.warn{background:var(--warn-bg);color:var(--warn)}
+  .chip.good{background:var(--good-bg);color:var(--good)}
+
+  /* KPI cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+  .kpi{position:relative;overflow:hidden;padding-top:22px}
+  .kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;
+               background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+  .kpi .label{color:var(--muted);font-size:13px;font-weight:600}
+  .kpi .value{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-top:4px;overflow-wrap:anywhere}
+  .kpi .hint{color:var(--muted);font-size:12px;margin-top:2px}
+
+  /* chart */
+  .chart-wrap{position:relative;height:260px}
+
+  /* two-column area */
+  .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+
+  /* feature bars */
+  .frow{margin-bottom:14px}
+  .frow-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px}
+  .bar{height:8px;border-radius:99px;background:var(--accent-soft);overflow:hidden}
+  .bar span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+
+  /* analyst */
+  #ask-form{display:flex;gap:8px}
+  #ask-form input{flex:1}
+  .ask-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px;min-height:18px}
+  .try{font-size:12px;color:var(--muted);margin:12px 0 6px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips button{font:inherit;font-size:13px;padding:6px 12px;border-radius:99px;cursor:pointer;
+                background:var(--accent-soft);color:var(--accent);border:1px solid transparent}
+  .chips button:hover{border-color:var(--accent)}
+  .qa{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+  .q{font-weight:650}
+  .a{white-space:pre-wrap;margin-top:6px;padding-left:12px;border-left:3px solid var(--accent)}
+  .a.err{border-left-color:var(--bad)}
+  .note{color:var(--muted);font-size:12px;text-align:center;margin-top:8px}
+  #loading{padding:12px 0}
 </style>
 </head>
 <body>
+<header class="topbar" id="topbar" hidden>
+  <div class="brand"><span class="logo"></span>Insight</div>
+  <button id="signout" class="btn">Sign out</button>
+</header>
+
 <main>
-  <div id="login" class="card">
-    <h2>Insight</h2>
-    <input id="email" type="email" placeholder="Email" autocomplete="username" style="width:100%">
-    <input id="password" type="password" placeholder="Password" autocomplete="current-password" style="width:100%">
-    <button id="signin" style="width:100%">Sign in</button>
-    <div id="login-err" class="err"></div>
+  <div id="login" class="login">
+    <div class="card login-card">
+      <div class="brand"><span class="logo"></span>Insight</div>
+      <h1>Sign in to your dashboard</h1>
+      <p class="muted">See how your team uses the product, and ask questions in plain English.</p>
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="you@company.com" autocomplete="username">
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Your password" autocomplete="current-password">
+      <button id="signin" class="btn primary">Sign in</button>
+      <div id="login-err" class="err" role="alert"></div>
+    </div>
   </div>
 
   <div id="app" hidden>
-    <div class="row"><h2 id="org"></h2><button id="signout">Sign out</button></div>
-    <div id="flags"></div>
-    <div id="cards" class="grid"></div>
-    <div class="card"><div class="label">Active users, last 30 days</div><canvas id="chart" height="90"></canvas></div>
-    <div class="grid">
-      <div class="card"><div class="label">Events by feature</div><table id="features"></table></div>
-      <div class="card"><div class="label">Ask about your usage</div>
+    <div class="hero">
+      <div>
+        <h1 id="org"></h1>
+        <p class="muted">Product usage overview</p>
+      </div>
+      <span id="plan" class="pill"></span>
+    </div>
+
+    <div id="loading" class="muted" hidden>Loading your data… the server may be waking up, this can take up to a minute.</div>
+
+    <section>
+      <div class="section-head">
+        <h2>Morning digest</h2>
+        <p>Your latest daily summary, compared with the same weekday in recent weeks.</p>
+      </div>
+      <div id="flags"></div>
+      <div id="cards" class="grid"></div>
+    </section>
+
+    <section>
+      <div class="card">
+        <h3>Daily active users</h3>
+        <p class="sub">How many different people used the product each day, over the last 30 days.</p>
+        <div class="chart-wrap"><canvas id="chart"></canvas></div>
+      </div>
+    </section>
+
+    <section class="two">
+      <div class="card">
+        <h3>Most used features</h3>
+        <p class="sub">Number of actions recorded per feature, over the last 30 days.</p>
+        <div id="features"></div>
+      </div>
+
+      <div class="card">
+        <h3>Ask the AI analyst</h3>
+        <p class="sub">Ask in plain English. Answers use only your organisation's data.</p>
         <div id="ask-form">
-          <input id="ask-q" type="text" maxlength="500" placeholder="Ask about your usage" aria-label="Ask about your usage">
-          <button id="ask-btn" type="button">Ask</button>
+          <input id="ask-q" type="text" maxlength="500" placeholder="e.g. Which feature grew the most this month?" aria-label="Ask about your usage">
+          <button id="ask-btn" class="btn primary" type="button">Ask</button>
         </div>
-        <div class="row muted"><span id="ask-status" aria-live="polite"></span><span><span id="ask-count">0</span>/500</span></div>
+        <div class="ask-meta"><span id="ask-status" aria-live="polite"></span><span><span id="ask-count">0</span>/500</span></div>
+        <div class="try">Try one of these:</div>
         <div id="ask-hint" class="chips"></div>
         <div id="ask-log" aria-live="polite"></div>
       </div>
-    </div>
+    </section>
+
+    <p class="note">Numbers update once a day after the morning data run.</p>
   </div>
 </main>
 
@@ -63,12 +199,14 @@ const CONFIG = {
 let session = null, chart = null;
 const $ = id => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+const fmt = v => typeof v === "number" ? v.toLocaleString() : String(v);
+const pretty = s => { s = String(s).replace(/_/g, " "); return s.charAt(0).toUpperCase() + s.slice(1); };
 
 async function authCall(grant, body) {
   const r = await fetch(`${CONFIG.SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
     method: "POST", headers: {apikey: CONFIG.ANON_KEY, "Content-Type": "application/json"},
     body: JSON.stringify(body)});
-  if (!r.ok) throw new Error("Sign-in failed");
+  if (!r.ok) throw new Error("Sign-in failed. Check your email and password.");
   session = await r.json();
 }
 
@@ -89,30 +227,65 @@ const money = c => (c / 100).toLocaleString(undefined, {style: "currency", curre
 async function loadDashboard() {
   const [me, digest, daily, feats] = await Promise.all([
     api("/v1/me"), api("/v1/digest").catch(() => null), api("/v1/usage/daily"), api("/v1/usage/features")]);
-  $("org").textContent = `${me.org_name} · ${me.plan}`;
+  $("org").textContent = me.org_name;
+  $("plan").textContent = `${me.plan} plan`;
 
   const flags = $("flags"); flags.replaceChildren();
   const cards = $("cards"); cards.replaceChildren();
   if (digest) {
-    if (digest.flag_usage_drop) flags.append(el("span", "Usage drop vs same weekday", "chip"));
-    if (digest.flag_usage_spike) flags.append(el("span", "Usage spike", "chip"));
-    if (digest.flag_canceled) flags.append(el("span", "Subscription canceled", "chip"));
-    [["Active users", digest.active_users],
-     ["Same weekday avg", digest.avg_active_same_weekday ?? "-"],
-     ["Events", digest.events],
-     ["Weekly active", digest.weekly_active_users],
-     ["Top feature", digest.top_feature ?? "-"],
-     ["MRR", digest.mrr_cents == null ? "-" : money(digest.mrr_cents)]
-    ].forEach(([l, v]) => { const c = el("div", undefined, "card"); c.append(el("div", l, "label"), el("div", String(v), "value")); cards.append(c); });
+    let any = false;
+    if (digest.flag_usage_drop) { flags.append(el("span", "Usage is down compared with the same weekday", "chip bad")); any = true; }
+    if (digest.flag_usage_spike) { flags.append(el("span", "Usage is unusually high", "chip warn")); any = true; }
+    if (digest.flag_canceled) { flags.append(el("span", "Subscription canceled", "chip bad")); any = true; }
+    if (!any) flags.append(el("span", "Nothing unusual to report", "chip good"));
+
+    [["Active users", digest.active_users, "latest day"],
+     ["Typical for this weekday", digest.avg_active_same_weekday ?? "-", "average of recent weeks"],
+     ["Events", digest.events, "latest day"],
+     ["Weekly active users", digest.weekly_active_users, ""],
+     ["Top feature", digest.top_feature == null ? "-" : pretty(digest.top_feature), "most used"],
+     ["Monthly revenue", digest.mrr_cents == null ? "-" : money(digest.mrr_cents), "MRR"]
+    ].forEach(([l, v, h]) => {
+      const c = el("div", undefined, "card kpi");
+      c.append(el("div", l, "label"), el("div", fmt(v), "value"));
+      if (h) c.append(el("div", h, "hint"));
+      cards.append(c);
+    });
+  } else {
+    flags.append(el("span", "No digest available yet", "chip warn"));
   }
 
+  const css = getComputedStyle(document.documentElement);
+  const accent = css.getPropertyValue("--accent").trim();
+  const muted = css.getPropertyValue("--muted").trim();
+  const grid = css.getPropertyValue("--border").trim();
   chart?.destroy();
-  chart = new Chart($("chart"), {type: "line",
-    data: {labels: daily.map(d => d.usage_date), datasets: [{data: daily.map(d => d.active_users), tension: .25}]},
-    options: {plugins: {legend: {display: false}}}});
+  chart = new Chart($("chart"), {
+    type: "line",
+    data: {
+      labels: daily.map(d => d.usage_date),
+      datasets: [{label: "Active users", data: daily.map(d => d.active_users),
+        borderColor: accent, backgroundColor: accent + "22", fill: true,
+        tension: .3, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2}]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: {mode: "index", intersect: false},
+      plugins: {legend: {display: false}},
+      scales: {
+        x: {ticks: {color: muted, maxTicksLimit: 8}, grid: {display: false}},
+        y: {beginAtZero: true, ticks: {color: muted, precision: 0}, grid: {color: grid}}}}});
 
-  const t = $("features"); t.replaceChildren();
-  feats.forEach(f => { const tr = el("tr"); tr.append(el("td", f.feature), el("td", String(f.events))); t.append(tr); });
+  const box = $("features"); box.replaceChildren();
+  if (!feats.length) box.append(el("p", "No feature activity in this period.", "muted"));
+  const max = Math.max(...feats.map(f => f.events), 1);
+  feats.forEach(f => {
+    const row = el("div", undefined, "frow");
+    const top = el("div", undefined, "frow-top");
+    top.append(el("span", pretty(f.feature)), el("strong", fmt(f.events)));
+    const bar = el("div", undefined, "bar"), fill = el("span");
+    fill.style.width = (f.events / max * 100) + "%";
+    bar.append(fill); row.append(top, bar); box.append(row);
+  });
 }
 
 function tidy(t) {
@@ -159,15 +332,29 @@ $("ask-q").addEventListener("input", () => { $("ask-count").textContent = $("ask
   const b = el("button", q); b.onclick = () => ask(q); $("ask-hint").append(b);
 });
 
-$("signin").onclick = async () => {
+async function doSignIn() {
+  const btn = $("signin");
   $("login-err").textContent = "";
+  btn.disabled = true; btn.textContent = "Signing in…";
   try {
     await authCall("password", {email: $("email").value, password: $("password").value});
-    $("login").hidden = true; $("app").hidden = false;
+    $("login").hidden = true; $("app").hidden = false; $("topbar").hidden = false;
+    $("loading").hidden = false;
     await loadDashboard();
-  } catch (e) { $("login").hidden = false; $("app").hidden = true; $("login-err").textContent = e.message; }
+  } catch (e) {
+    $("login").hidden = false; $("app").hidden = true; $("topbar").hidden = true;
+    $("login-err").textContent = e.message;
+  } finally {
+    $("loading").hidden = true;
+    btn.disabled = false; btn.textContent = "Sign in";
+  }
+}
+$("signin").onclick = doSignIn;
+$("password").addEventListener("keydown", e => { if (e.key === "Enter") doSignIn(); });
+$("signout").onclick = () => {
+  session = null; $("ask-log").replaceChildren();
+  $("app").hidden = true; $("topbar").hidden = true; $("login").hidden = false; $("password").value = "";
 };
-$("signout").onclick = () => { session = null; $("ask-log").replaceChildren(); $("app").hidden = true; $("login").hidden = false; $("password").value = ""; };
 </script>
 </body>
 </html>
