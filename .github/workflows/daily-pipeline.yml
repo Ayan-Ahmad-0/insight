@@ -19,5 +19,5 @@ jobs:
         run: python pipeline/generate_events.py
       - name: Source freshness
         run: python pipeline/run_dbt.py source freshness
-      - name: Build models and run tests
-        run: python pipeline/run_dbt.py build
+      - name: ops check
+        run: python scripts/ops_check.py
