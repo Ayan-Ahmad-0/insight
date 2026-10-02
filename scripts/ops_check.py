@@ -1,6 +1,6 @@
 """Ops check: stale marts, AI error rate (24h), AI spend (24h). Exit 1 on problems."""
 import os, sys
-from pathlib import Pathgi
+from pathlib import Path
 
 import psycopg
 from dotenv import load_dotenv
