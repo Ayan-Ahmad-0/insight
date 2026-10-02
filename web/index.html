@@ -3,131 +3,128 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Insight · Product usage dashboard</title>
+<meta name="color-scheme" content="light dark">
+<title>Insight · Usage dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#f4f6fb; --surface:#ffffff; --border:#e4e8f0; --text:#161b26; --muted:#667085;
-    --accent:#4f46e5; --accent-soft:#eef0ff; --accent-2:#06b6d4;
-    --good:#067647; --good-bg:#e7f6ee; --warn:#b54708; --warn-bg:#fff4e0; --bad:#b42318; --bad-bg:#fdeceb;
-    --shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.06);
+    --bg:#f3f0e8; --surface:#fbf9f4; --ink:#1c1b17; --muted:#6e6a5e; --line:#d9d4c5;
+    --green:#1f6b52; --on-green:#ffffff; --green-soft:#dcebe3;
+    --amber:#b7791f; --amber-soft:#f6e7c8; --red:#a8402a; --red-soft:#f4dcd4; --prev:#a29c8a;
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#0e1118; --surface:#171b26; --border:#272d3b; --text:#eef0f6; --muted:#9aa3b5;
-      --accent:#8b8cff; --accent-soft:#232842; --accent-2:#22d3ee;
-      --good:#6ee7a4; --good-bg:#12301f; --warn:#fbbf6a; --warn-bg:#3a2a10; --bad:#ff9b94; --bad-bg:#3b1a1a;
-      --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.3);
+      --bg:#151410; --surface:#1d1c17; --ink:#ece8db; --muted:#a29d8d; --line:#35332a;
+      --green:#5fc19c; --on-green:#0e1a15; --green-soft:#1c3a2f;
+      --amber:#e0a84a; --amber-soft:#3a2f17; --red:#e07a63; --red-soft:#3d221b; --prev:#7d7868;
     }
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);
-       font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-  h1,h2,h3,p{margin:0}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       font-variant-numeric:tabular-nums}
+  h1,h2,h3{font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-weight:600;margin:0;letter-spacing:-.01em}
+  p{margin:0}
   [hidden]{display:none !important}
-  .muted{color:var(--muted)} .err{color:var(--bad)}
+  .muted{color:var(--muted)} .small{font-size:13px} .err{color:var(--red)}
 
-  /* top bar */
-  .topbar{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;
-          padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:-.01em}
-  .logo{width:26px;height:26px;border-radius:8px;display:inline-block;
-        background:linear-gradient(135deg,var(--accent),var(--accent-2))}
-  main{max-width:1000px;margin:0 auto;padding:28px 24px 48px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 28px;
+          background:var(--surface);border-bottom:1px solid var(--line)}
+  .brand{font-family:Georgia,"Times New Roman",serif;font-size:21px;font-weight:700;display:flex;align-items:center;gap:10px}
+  .brand::before{content:"";width:12px;height:12px;background:var(--green);display:inline-block}
+  main{max-width:1040px;margin:0 auto;padding:28px 24px 56px}
 
-  /* buttons and inputs */
-  .btn{font:inherit;font-weight:600;border-radius:10px;padding:9px 16px;cursor:pointer;border:1px solid var(--border);
-       background:var(--surface);color:var(--text)}
-  .btn:hover{border-color:var(--accent)}
-  .btn.primary{background:linear-gradient(135deg,var(--accent),#6d63f5);color:#fff;border-color:transparent}
+  .btn{font:inherit;font-weight:600;padding:8px 14px;border:1px solid var(--line);border-radius:6px;
+       background:var(--surface);color:var(--ink);cursor:pointer}
+  .btn:hover{border-color:var(--green)}
+  .btn.primary{background:var(--green);color:var(--on-green);border-color:var(--green)}
   .btn.primary:hover{filter:brightness(1.08)}
-  .btn:disabled{opacity:.55;cursor:not-allowed;filter:none}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.link{border:0;background:none;color:var(--green);padding:6px 0;font-weight:600}
   input[type=text],input[type=email],input[type=password]{
-    font:inherit;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;
-    background:var(--surface);color:var(--text)}
-  input:focus,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-  label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
+    font:inherit;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;
+    background:var(--bg);color:var(--ink)}
+  input:focus,button:focus-visible{outline:2px solid var(--green);outline-offset:1px}
+  label{display:block;font-size:13px;font-weight:600;margin:16px 0 6px}
 
-  /* cards */
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
-  .card h3{font-size:16px;font-weight:650}
-  .card .sub{color:var(--muted);font-size:13px;margin:2px 0 14px}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:20px}
+  .panel h3{font-size:17px}
+  .panel .sub{color:var(--muted);font-size:13px;margin:2px 0 14px}
 
-  /* login */
-  .login{min-height:calc(100vh - 80px);display:grid;place-items:center}
-  .login-card{width:100%;max-width:400px;padding:32px}
-  .login-card .brand{font-size:22px;margin-bottom:18px}
-  .login-card h1{font-size:20px;margin-bottom:4px}
-  .login-card .btn{width:100%;margin-top:20px;padding:11px}
-  #login-err{min-height:20px;margin-top:10px;font-size:14px}
+  .login{min-height:calc(100vh - 120px);display:grid;place-items:center}
+  .login .panel{width:100%;max-width:400px;padding:32px}
+  .login .brand{margin-bottom:20px}
+  .login h1{font-size:22px;margin-bottom:4px}
+  .login .btn{width:100%;margin-top:22px;padding:11px}
+  #login-err{min-height:22px;margin-top:10px;font-size:14px}
 
-  /* dashboard header */
-  .hero{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap}
-  .hero h1{font-size:28px;letter-spacing:-.02em}
-  .pill{display:inline-block;padding:4px 12px;border-radius:99px;background:var(--accent-soft);color:var(--accent);
-        font-size:13px;font-weight:600;text-transform:capitalize}
-  .section-head{margin:0 0 12px}
-  .section-head h2{font-size:18px;letter-spacing:-.01em}
-  .section-head p{color:var(--muted);font-size:13px}
-  section{margin-bottom:28px}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+  .page-head h1{font-size:30px}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .seg button{font:inherit;font-size:14px;padding:7px 14px;border:0;border-right:1px solid var(--line);
+              background:var(--surface);color:var(--ink);cursor:pointer}
+  .seg button:last-child{border-right:0}
+  .seg button[aria-pressed="true"]{background:var(--green);color:var(--on-green);font-weight:600}
+  .banner{background:var(--red-soft);color:var(--red);border:1px solid var(--red);border-radius:6px;padding:10px 14px;margin:12px 0}
 
-  /* flags */
+  section{margin-top:34px}
+  .sec-head{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px;display:flex;
+            justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .sec-head h2{font-size:21px}
+
   #flags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-  .chip{display:inline-block;padding:4px 12px;border-radius:99px;font-size:13px;font-weight:600}
-  .chip.bad{background:var(--bad-bg);color:var(--bad)}
-  .chip.warn{background:var(--warn-bg);color:var(--warn)}
-  .chip.good{background:var(--good-bg);color:var(--good)}
+  .flag{padding:4px 12px;border-radius:4px;font-size:13px;font-weight:600;border:1px solid transparent}
+  .flag.bad{background:var(--red-soft);color:var(--red)}
+  .flag.warn{background:var(--amber-soft);color:var(--amber)}
+  .flag.good{background:var(--green-soft);color:var(--green)}
 
-  /* KPI cards */
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
-  .kpi{position:relative;overflow:hidden;padding-top:22px}
-  .kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;
-               background:linear-gradient(90deg,var(--accent),var(--accent-2))}
-  .kpi .label{color:var(--muted);font-size:13px;font-weight:600}
-  .kpi .value{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-top:4px;overflow-wrap:anywhere}
-  .kpi .hint{color:var(--muted);font-size:12px;margin-top:2px}
+  .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;
+         background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .kpi{background:var(--surface);padding:16px}
+  .kpi .label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+  .kpi .value{font-family:Georgia,"Times New Roman",serif;font-size:30px;font-weight:600;margin-top:4px;overflow-wrap:anywhere}
+  .kpi .hint{font-size:12px;color:var(--muted);margin-top:2px;min-height:18px}
+  .delta.up{color:var(--green);font-weight:600} .delta.down{color:var(--red);font-weight:600} .delta.flat{color:var(--muted)}
 
-  /* chart */
-  .chart-wrap{position:relative;height:260px}
+  .chart-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .chart-wrap{position:relative;height:280px} .chart-wrap.short{height:220px}
+  #trend-stats{margin-top:16px}
+  #compare-note{margin-top:8px}
 
-  /* two-column area */
-  .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+  .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+  .frow{padding:9px 0;border-bottom:1px solid var(--line)}
+  .frow:last-of-type{border-bottom:0}
+  .frow-top{display:flex;justify-content:space-between;gap:10px;font-size:14px;margin-bottom:5px}
+  .frow-top .nums{color:var(--muted)} .frow-top .nums strong{color:var(--ink);margin-right:8px}
+  .bar{height:6px;background:var(--green-soft);border-radius:3px}
+  .bar span{display:block;height:100%;background:var(--green);border-radius:3px}
 
-  /* feature bars */
-  .frow{margin-bottom:14px}
-  .frow-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px}
-  .bar{height:8px;border-radius:99px;background:var(--accent-soft);overflow:hidden}
-  .bar span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
-
-  /* analyst */
-  #ask-form{display:flex;gap:8px}
-  #ask-form input{flex:1}
+  #ask-form{display:flex;gap:8px} #ask-form input{flex:1}
   .ask-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px;min-height:18px}
-  .try{font-size:12px;color:var(--muted);margin:12px 0 6px}
+  .try{font-size:12px;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chips button{font:inherit;font-size:13px;padding:6px 12px;border-radius:99px;cursor:pointer;
-                background:var(--accent-soft);color:var(--accent);border:1px solid transparent}
-  .chips button:hover{border-color:var(--accent)}
-  .qa{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+  .chips button{font:inherit;font-size:13px;padding:5px 11px;border-radius:4px;cursor:pointer;
+                background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+  .chips button:hover{border-color:var(--green);color:var(--green)}
+  .qa{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
   .q{font-weight:650}
-  .a{white-space:pre-wrap;margin-top:6px;padding-left:12px;border-left:3px solid var(--accent)}
-  .a.err{border-left-color:var(--bad)}
-  .note{color:var(--muted);font-size:12px;text-align:center;margin-top:8px}
-  #loading{padding:12px 0}
+  .a{white-space:pre-wrap;margin-top:6px;padding-left:12px;border-left:3px solid var(--green)}
+  .a.err{border-left-color:var(--red)}
+  .foot{margin-top:28px;text-align:center}
 </style>
 </head>
 <body>
 <header class="topbar" id="topbar" hidden>
-  <div class="brand"><span class="logo"></span>Insight</div>
+  <div class="brand">Insight</div>
   <button id="signout" class="btn">Sign out</button>
 </header>
 
 <main>
   <div id="login" class="login">
-    <div class="card login-card">
-      <div class="brand"><span class="logo"></span>Insight</div>
-      <h1>Sign in to your dashboard</h1>
-      <p class="muted">See how your team uses the product, and ask questions in plain English.</p>
+    <div class="panel">
+      <div class="brand">Insight</div>
+      <h1>Sign in</h1>
+      <p class="muted">See how your team uses the product and ask questions in plain English.</p>
       <label for="email">Email</label>
       <input id="email" type="email" placeholder="you@company.com" autocomplete="username">
       <label for="password">Password</label>
@@ -138,55 +135,89 @@
   </div>
 
   <div id="app" hidden>
-    <div class="hero">
+    <div class="page-head">
       <div>
         <h1 id="org"></h1>
-        <p class="muted">Product usage overview</p>
+        <p class="muted" id="plan-line"></p>
       </div>
-      <span id="plan" class="pill"></span>
+      <div class="toolbar">
+        <div class="seg" id="range-seg" role="group" aria-label="Date range">
+          <button data-days="7" aria-pressed="false">7 days</button>
+          <button data-days="14" aria-pressed="false">14 days</button>
+          <button data-days="30" aria-pressed="true">30 days</button>
+          <button data-days="90" aria-pressed="false">90 days</button>
+        </div>
+        <button id="csv" class="btn">Download CSV</button>
+      </div>
     </div>
-
-    <div id="loading" class="muted" hidden>Loading your data… the server may be waking up, this can take up to a minute.</div>
+    <div id="status" class="muted small" aria-live="polite"></div>
+    <div id="banner" class="banner" role="alert" hidden></div>
 
     <section>
-      <div class="section-head">
-        <h2>Morning digest</h2>
-        <p>Your latest daily summary, compared with the same weekday in recent weeks.</p>
-      </div>
+      <div class="sec-head"><h2>Latest day at a glance</h2><span id="digest-sub" class="muted small"></span></div>
       <div id="flags"></div>
-      <div id="cards" class="grid"></div>
+      <div id="cards" class="strip"></div>
     </section>
 
     <section>
-      <div class="card">
-        <h3>Daily active users</h3>
-        <p class="sub">How many different people used the product each day, over the last 30 days.</p>
-        <div class="chart-wrap"><canvas id="chart"></canvas></div>
+      <div class="sec-head"><h2>Usage trends</h2><span class="muted small" id="range-label"></span></div>
+      <div class="panel">
+        <div class="chart-top">
+          <div>
+            <h3 id="trend-title">Daily active users</h3>
+            <p class="sub" style="margin:2px 0 0">People who used the product each day. The dashed line is the period before.</p>
+          </div>
+          <div class="seg" id="metric-seg" role="group" aria-label="Metric">
+            <button data-metric="active" aria-pressed="true">Active users</button>
+            <button data-metric="events" aria-pressed="false" id="events-btn">Events</button>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="trend"></canvas></div>
+        <div id="trend-stats" class="strip"></div>
+        <p id="compare-note" class="muted small"></p>
       </div>
     </section>
 
-    <section class="two">
-      <div class="card">
-        <h3>Most used features</h3>
-        <p class="sub">Number of actions recorded per feature, over the last 30 days.</p>
-        <div id="features"></div>
+    <section id="rev-section" hidden>
+      <div class="sec-head"><h2>Revenue</h2><span class="muted small">Monthly recurring revenue (MRR)</span></div>
+      <div class="panel">
+        <div id="rev-stats" class="strip" style="margin-bottom:16px"></div>
+        <div class="chart-wrap short"><canvas id="mrr"></canvas></div>
       </div>
+    </section>
 
-      <div class="card">
-        <h3>Ask the AI analyst</h3>
-        <p class="sub">Ask in plain English. Answers use only your organisation's data.</p>
+    <section>
+      <div class="sec-head"><h2>Where the usage happens</h2></div>
+      <div class="two">
+        <div class="panel">
+          <h3>Most used features</h3>
+          <p class="sub">Share of all actions in the selected range.</p>
+          <div id="features"></div>
+        </div>
+        <div class="panel">
+          <h3>Busiest days of the week</h3>
+          <p class="sub">Average active users per weekday. The highlighted bar is the busiest.</p>
+          <div class="chart-wrap short"><canvas id="weekday"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Ask the AI analyst</h2><span class="muted small">Answers use only your organisation's data.</span></div>
+      <div class="panel">
         <div id="ask-form">
-          <input id="ask-q" type="text" maxlength="500" placeholder="e.g. Which feature grew the most this month?" aria-label="Ask about your usage">
+          <input id="ask-q" type="text" maxlength="500" placeholder="e.g. Which feature was used most in the last 30 days?" aria-label="Ask about your usage">
           <button id="ask-btn" class="btn primary" type="button">Ask</button>
         </div>
         <div class="ask-meta"><span id="ask-status" aria-live="polite"></span><span><span id="ask-count">0</span>/500</span></div>
-        <div class="try">Try one of these:</div>
+        <div class="try">Try one of these</div>
         <div id="ask-hint" class="chips"></div>
         <div id="ask-log" aria-live="polite"></div>
+        <button id="ask-clear" class="btn link" type="button" hidden>Clear answers</button>
       </div>
     </section>
 
-    <p class="note">Numbers update once a day after the morning data run.</p>
+    <p class="foot muted small">Numbers update once a day after the morning data run.</p>
   </div>
 </main>
 
@@ -196,11 +227,20 @@ const CONFIG = {
   SUPABASE_URL: "https://sqjlvhraizhgdqudltnz.supabase.co",
   ANON_KEY: "sb_publishable_z8smYxnbucH7OdWNpBM0oQ_axOX3aQ4"      // public by design. Never put the secret key here.
 };
-let session = null, chart = null;
+let session = null;
+const charts = {};
+const state = {days: 30, metric: "active", daily: [], prev: [], feats: [], showAll: false, range: null};
+
 const $ = id => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
-const fmt = v => typeof v === "number" ? v.toLocaleString() : String(v);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const sum = a => a.reduce((x, y) => x + y, 0);
+const fmt = v => typeof v === "number" ? v.toLocaleString(undefined, {maximumFractionDigits: 1}) : String(v);
 const pretty = s => { s = String(s).replace(/_/g, " "); return s.charAt(0).toUpperCase() + s.slice(1); };
+const money = c => (c / 100).toLocaleString(undefined, {style: "currency", currency: "USD"});
+const day10 = v => String(v).slice(0, 10);
+const ev = d => d.events ?? d.event_count ?? d.total_events ?? null;
+const hasEvents = () => state.daily.some(d => ev(d) != null);
 
 async function authCall(grant, body) {
   const r = await fetch(`${CONFIG.SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
@@ -222,77 +262,247 @@ async function api(path, opts = {}, retried = false) {
   return r.json();
 }
 
-const money = c => (c / 100).toLocaleString(undefined, {style: "currency", currency: "USD"});
+// ----- date ranges (UTC, ending yesterday) -----
+function range(days, back) {
+  const end = new Date(); end.setUTCHours(0, 0, 0, 0);
+  end.setUTCDate(end.getUTCDate() - 1 - back * days);
+  const start = new Date(end); start.setUTCDate(start.getUTCDate() - (days - 1));
+  return {from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10)};
+}
 
-async function loadDashboard() {
-  const [me, digest, daily, feats] = await Promise.all([
-    api("/v1/me"), api("/v1/digest").catch(() => null), api("/v1/usage/daily"), api("/v1/usage/features")]);
+// ----- small builders -----
+function delta(cur, prev) {
+  if (prev == null || prev === 0 || cur == null) return null;
+  const p = (cur - prev) / prev * 100;
+  const cls = Math.abs(p) < 0.5 ? "flat" : p > 0 ? "up" : "down";
+  const arrow = cls === "flat" ? "–" : p > 0 ? "▲" : "▼";
+  return el("span", `${arrow} ${Math.abs(p).toFixed(1)}% vs previous ${state.days} days`, "delta " + cls);
+}
+function kpi(label, value, hint, extra) {
+  const c = el("div", undefined, "kpi");
+  c.append(el("div", label, "label"), el("div", String(value), "value"));
+  const h = el("div", hint || "", "hint");
+  if (extra) { if (hint) h.append(" "); h.append(extra); }
+  c.append(h);
+  return c;
+}
+function summarize(rows) {
+  const n = rows.length;
+  if (!n) return {avg: 0, peak: 0, peakDate: "", events: null, perUser: null};
+  const act = rows.map(r => r.active_users);
+  const total = sum(act), peak = Math.max(...act);
+  const withEv = rows.some(r => ev(r) != null);
+  const events = withEv ? sum(rows.map(r => ev(r) || 0)) : null;
+  return {avg: total / n, peak, peakDate: day10(rows[act.indexOf(peak)].usage_date),
+          events, perUser: events != null && total ? events / total : null};
+}
+
+// ----- sections -----
+function renderHeader(me) {
   $("org").textContent = me.org_name;
-  $("plan").textContent = `${me.plan} plan`;
+  $("plan-line").textContent = `Product usage dashboard · ${pretty(me.plan)} plan`;
+}
 
-  const flags = $("flags"); flags.replaceChildren();
-  const cards = $("cards"); cards.replaceChildren();
-  if (digest) {
-    let any = false;
-    if (digest.flag_usage_drop) { flags.append(el("span", "Usage is down compared with the same weekday", "chip bad")); any = true; }
-    if (digest.flag_usage_spike) { flags.append(el("span", "Usage is unusually high", "chip warn")); any = true; }
-    if (digest.flag_canceled) { flags.append(el("span", "Subscription canceled", "chip bad")); any = true; }
-    if (!any) flags.append(el("span", "Nothing unusual to report", "chip good"));
+function renderDigest(digest) {
+  const flags = $("flags"), cards = $("cards");
+  flags.replaceChildren(); cards.replaceChildren(); $("digest-sub").textContent = "";
+  if (!digest) { flags.append(el("span", "No digest available yet", "flag warn")); return; }
+  if (digest.digest_date) $("digest-sub").textContent = `For ${day10(digest.digest_date)}, compared with the same weekday in recent weeks`;
+  let any = false;
+  if (digest.flag_usage_drop) { flags.append(el("span", "Usage is down compared with the same weekday", "flag bad")); any = true; }
+  if (digest.flag_usage_spike) { flags.append(el("span", "Usage is unusually high", "flag warn")); any = true; }
+  if (digest.flag_canceled) { flags.append(el("span", "Subscription canceled", "flag bad")); any = true; }
+  if (!any) flags.append(el("span", "Nothing unusual to report", "flag good"));
 
-    [["Active users", digest.active_users, "latest day"],
-     ["Typical for this weekday", digest.avg_active_same_weekday ?? "-", "average of recent weeks"],
-     ["Events", digest.events, "latest day"],
-     ["Weekly active users", digest.weekly_active_users, ""],
-     ["Top feature", digest.top_feature == null ? "-" : pretty(digest.top_feature), "most used"],
-     ["Monthly revenue", digest.mrr_cents == null ? "-" : money(digest.mrr_cents), "MRR"]
-    ].forEach(([l, v, h]) => {
-      const c = el("div", undefined, "card kpi");
-      c.append(el("div", l, "label"), el("div", fmt(v), "value"));
-      if (h) c.append(el("div", h, "hint"));
-      cards.append(c);
-    });
-  } else {
-    flags.append(el("span", "No digest available yet", "chip warn"));
+  const base = digest.avg_active_same_weekday;
+  let dl = null;
+  if (typeof base === "number" && base > 0) {
+    const p = (digest.active_users - base) / base * 100;
+    const cls = Math.abs(p) < 3 ? "flat" : p > 0 ? "up" : "down";
+    dl = el("span", `${p >= 0 ? "▲" : "▼"} ${Math.abs(p).toFixed(0)}% vs typical`, "delta " + cls);
   }
+  cards.append(
+    kpi("Active users", fmt(digest.active_users), "latest day", dl),
+    kpi("Typical for this weekday", fmt(digest.avg_active_same_weekday ?? "-"), "average of recent weeks"),
+    kpi("Events", fmt(digest.events), "latest day"),
+    kpi("Weekly active users", fmt(digest.weekly_active_users), "last 7 days"),
+    kpi("Top feature", digest.top_feature == null ? "-" : pretty(digest.top_feature), "most used"),
+    kpi("Monthly revenue", digest.mrr_cents == null ? "-" : money(digest.mrr_cents), "MRR"));
+}
 
-  const css = getComputedStyle(document.documentElement);
-  const accent = css.getPropertyValue("--accent").trim();
-  const muted = css.getPropertyValue("--muted").trim();
-  const grid = css.getPropertyValue("--border").trim();
-  chart?.destroy();
-  chart = new Chart($("chart"), {
+function baseChartOptions() {
+  Chart.defaults.color = css("--muted");
+  Chart.defaults.borderColor = css("--line");
+  Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+}
+
+function drawTrend() {
+  baseChartOptions();
+  const isEv = state.metric === "events";
+  const key = isEv ? (d => ev(d)) : (d => d.active_users);
+  const green = css("--green");
+  $("trend-title").textContent = isEv ? "Daily events" : "Daily active users";
+  const ds = [{label: isEv ? "Events" : "Active users", data: state.daily.map(key),
+    borderColor: green, backgroundColor: green + "22", fill: true, tension: .25,
+    pointRadius: 0, pointHoverRadius: 4, borderWidth: 2}];
+  if (state.prev.length === state.days) {
+    ds.push({label: "Previous period", data: state.prev.map(key), borderColor: css("--prev"),
+      borderDash: [5, 4], fill: false, tension: .25, pointRadius: 0, borderWidth: 1.5});
+  }
+  charts.trend?.destroy();
+  charts.trend = new Chart($("trend"), {
     type: "line",
-    data: {
-      labels: daily.map(d => d.usage_date),
-      datasets: [{label: "Active users", data: daily.map(d => d.active_users),
-        borderColor: accent, backgroundColor: accent + "22", fill: true,
-        tension: .3, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2}]},
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: {mode: "index", intersect: false},
-      plugins: {legend: {display: false}},
-      scales: {
-        x: {ticks: {color: muted, maxTicksLimit: 8}, grid: {display: false}},
-        y: {beginAtZero: true, ticks: {color: muted, precision: 0}, grid: {color: grid}}}}});
+    data: {labels: state.daily.map(d => day10(d.usage_date)), datasets: ds},
+    options: {responsive: true, maintainAspectRatio: false, interaction: {mode: "index", intersect: false},
+      plugins: {legend: {display: ds.length > 1, labels: {boxWidth: 18}}},
+      scales: {x: {ticks: {maxTicksLimit: 8}, grid: {display: false}},
+               y: {beginAtZero: true, ticks: {precision: 0}}}}});
+}
 
+function renderTrendStats() {
+  const box = $("trend-stats"); box.replaceChildren();
+  const cur = summarize(state.daily);
+  const canCompare = state.prev.length === state.days && sum(state.prev.map(r => r.active_users)) > 0;
+  const pv = canCompare ? summarize(state.prev) : null;
+  box.append(kpi("Average daily active users", fmt(cur.avg), "", pv ? delta(cur.avg, pv.avg) : null));
+  box.append(kpi("Busiest day", fmt(cur.peak), cur.peakDate));
+  if (cur.events != null) {
+    box.append(kpi("Total events", fmt(cur.events), "", pv ? delta(cur.events, pv.events) : null));
+    box.append(kpi("Events per active user", cur.perUser == null ? "-" : fmt(cur.perUser), "per day, on average",
+                   pv ? delta(cur.perUser, pv.perUser) : null));
+  }
+  $("compare-note").textContent = pv ? "" : "The comparison with the previous period appears once there is enough history for it.";
+}
+
+function drawWeekday() {
+  baseChartOptions();
+  const sums = Array(7).fill(0), counts = Array(7).fill(0);
+  state.daily.forEach(d => {
+    const w = new Date(day10(d.usage_date) + "T00:00:00Z").getUTCDay();
+    sums[w] += d.active_users; counts[w]++;
+  });
+  const order = [1, 2, 3, 4, 5, 6, 0], names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const avgs = order.map(w => counts[w] ? sums[w] / counts[w] : 0);
+  const max = Math.max(...avgs);
+  charts.weekday?.destroy();
+  charts.weekday = new Chart($("weekday"), {
+    type: "bar",
+    data: {labels: order.map(w => names[w]),
+           datasets: [{data: avgs, borderRadius: 3,
+             backgroundColor: avgs.map(v => v === max && max > 0 ? css("--amber") : css("--green"))}]},
+    options: {responsive: true, maintainAspectRatio: false,
+      plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => ` ${c.parsed.y.toFixed(1)} average active users`}}},
+      scales: {x: {grid: {display: false}}, y: {beginAtZero: true, ticks: {precision: 0}}}}});
+}
+
+function renderFeatures() {
   const box = $("features"); box.replaceChildren();
-  if (!feats.length) box.append(el("p", "No feature activity in this period.", "muted"));
-  const max = Math.max(...feats.map(f => f.events), 1);
-  feats.forEach(f => {
-    const row = el("div", undefined, "frow");
-    const top = el("div", undefined, "frow-top");
-    top.append(el("span", pretty(f.feature)), el("strong", fmt(f.events)));
+  const feats = [...state.feats].sort((a, b) => b.events - a.events);
+  if (!feats.length) { box.append(el("p", "No feature activity in this period.", "muted")); return; }
+  const total = sum(feats.map(f => f.events)) || 1, max = feats[0].events || 1;
+  (state.showAll ? feats : feats.slice(0, 8)).forEach(f => {
+    const row = el("div", undefined, "frow"), top = el("div", undefined, "frow-top");
+    const nums = el("span", undefined, "nums");
+    nums.append(el("strong", fmt(f.events)), document.createTextNode(`${(f.events / total * 100).toFixed(1)}%`));
+    top.append(el("span", pretty(f.feature)), nums);
     const bar = el("div", undefined, "bar"), fill = el("span");
     fill.style.width = (f.events / max * 100) + "%";
     bar.append(fill); row.append(top, bar); box.append(row);
   });
+  if (feats.length > 8) {
+    const b = el("button", state.showAll ? "Show top 8 only" : `Show all ${feats.length} features`, "btn link");
+    b.onclick = () => { state.showAll = !state.showAll; renderFeatures(); };
+    box.append(b);
+  }
 }
 
+function renderRevenue(mrr) {
+  const sec = $("rev-section");
+  const rows = (mrr || []).map(m => ({date: day10(m.mrr_date ?? m.date ?? ""), cents: m.mrr_cents ?? m.mrr ?? null, status: m.status ?? null}))
+    .filter(r => r.date && r.cents != null).sort((a, b) => a.date.localeCompare(b.date));
+  if (!rows.length) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const first = rows[0], last = rows[rows.length - 1];
+  const change = last.cents - first.cents;
+  const stats = $("rev-stats"); stats.replaceChildren();
+  stats.append(
+    kpi("Current MRR", money(last.cents), last.date),
+    kpi("Change over range", (change > 0 ? "+" : change < 0 ? "-" : "") + money(Math.abs(change)), `since ${first.date}`),
+    kpi("Subscription status", last.status ? pretty(last.status) : "-", "latest day"));
+  baseChartOptions();
+  charts.mrr?.destroy();
+  charts.mrr = new Chart($("mrr"), {
+    type: "line",
+    data: {labels: rows.map(r => r.date), datasets: [{data: rows.map(r => r.cents / 100), stepped: true,
+      borderColor: css("--amber"), backgroundColor: css("--amber") + "22", fill: true, pointRadius: 0, borderWidth: 2}]},
+    options: {responsive: true, maintainAspectRatio: false,
+      plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => " $" + c.parsed.y.toLocaleString()}}},
+      scales: {x: {ticks: {maxTicksLimit: 8}, grid: {display: false}},
+               y: {beginAtZero: true, ticks: {callback: v => "$" + v.toLocaleString()}}}}});
+}
+
+// ----- loading -----
+async function loadRange() {
+  $("status").textContent = "Updating…"; $("banner").hidden = true;
+  const cur = range(state.days, 0), prv = range(state.days, 1);
+  const q = r => `from=${r.from}&to=${r.to}`;
+  try {
+    const [daily, feats, prev, mrr] = await Promise.all([
+      api(`/v1/usage/daily?${q(cur)}`),
+      api(`/v1/usage/features?${q(cur)}`),
+      api(`/v1/usage/daily?${q(prv)}`).catch(() => []),
+      api(`/v1/revenue/mrr?${q(cur)}`).catch(() => null)]);
+    const byDate = (a, b) => day10(a.usage_date).localeCompare(day10(b.usage_date));
+    state.daily = [...daily].sort(byDate); state.prev = [...prev].sort(byDate);
+    state.feats = feats; state.range = cur;
+    $("range-label").textContent = `${cur.from} to ${cur.to} (UTC)`;
+    $("events-btn").hidden = !hasEvents();
+    if (!hasEvents() && state.metric === "events") setMetric("active", false);
+    drawTrend(); renderTrendStats(); drawWeekday(); renderFeatures(); renderRevenue(mrr);
+    const last = state.daily.length ? day10(state.daily[state.daily.length - 1].usage_date) : "no data";
+    $("status").textContent = `Data through ${last}`;
+  } catch (e) {
+    $("status").textContent = "";
+    $("banner").textContent = "Couldn't load this range: " + e.message; $("banner").hidden = false;
+  }
+}
+
+async function loadAll() {
+  const [me, digest] = await Promise.all([api("/v1/me"), api("/v1/digest").catch(() => null)]);
+  renderHeader(me); renderDigest(digest);
+  await loadRange();
+}
+
+function setMetric(m, redraw = true) {
+  state.metric = m;
+  document.querySelectorAll("#metric-seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.metric === m)));
+  if (redraw) drawTrend();
+}
+
+document.querySelectorAll("#range-seg button").forEach(b => b.onclick = () => {
+  state.days = Number(b.dataset.days);
+  document.querySelectorAll("#range-seg button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  loadRange();
+});
+document.querySelectorAll("#metric-seg button").forEach(b => b.onclick = () => setMetric(b.dataset.metric));
+
+$("csv").onclick = () => {
+  if (!state.daily.length) return;
+  const withEv = hasEvents();
+  const lines = [withEv ? "date,active_users,events" : "date,active_users"].concat(
+    state.daily.map(d => [day10(d.usage_date), d.active_users].concat(withEv ? [ev(d) ?? ""] : []).join(",")));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([lines.join("\n")], {type: "text/csv"}));
+  a.download = `insight-usage-${state.range.from}-to-${state.range.to}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+// ----- AI analyst -----
 function tidy(t) {
   return t.replace(/\*\*/g, "")
           .replace(/\[def:([a-z0-9_]+)\]/g, (m, id) => `(definition: ${id.replace(/_/g, " ")})`);
 }
-
 let asking = false;
 async function ask(question) {
   question = question.trim();
@@ -318,20 +528,23 @@ async function ask(question) {
   }
   const box = el("div", undefined, "qa");
   box.append(el("div", question, "q"), el("div", text, isErr ? "a err" : "a"));
-  $("ask-log").prepend(box);
+  $("ask-log").prepend(box); $("ask-clear").hidden = false;
   if (!isErr) $("ask-q").value = "";
   $("ask-count").textContent = $("ask-q").value.length;
 }
-
 $("ask-btn").onclick = () => ask($("ask-q").value);
 $("ask-q").addEventListener("keydown", e => { if (e.key === "Enter") ask($("ask-q").value); });
 $("ask-q").addEventListener("input", () => { $("ask-count").textContent = $("ask-q").value.length; });
+$("ask-clear").onclick = () => { $("ask-log").replaceChildren(); $("ask-clear").hidden = true; };
 ["Which feature was used most in the last 30 days?",
  "How many active users did we have yesterday?",
+ "How many events did we have in the last 7 days?",
+ "What is our plan and subscription status?",
  "What does active user mean?"].forEach(q => {
   const b = el("button", q); b.onclick = () => ask(q); $("ask-hint").append(b);
 });
 
+// ----- sign in / out -----
 async function doSignIn() {
   const btn = $("signin");
   $("login-err").textContent = "";
@@ -339,20 +552,20 @@ async function doSignIn() {
   try {
     await authCall("password", {email: $("email").value, password: $("password").value});
     $("login").hidden = true; $("app").hidden = false; $("topbar").hidden = false;
-    $("loading").hidden = false;
-    await loadDashboard();
+    $("status").textContent = "Loading your data… the server may be waking up, this can take up to a minute.";
+    await loadAll();
   } catch (e) {
     $("login").hidden = false; $("app").hidden = true; $("topbar").hidden = true;
     $("login-err").textContent = e.message;
   } finally {
-    $("loading").hidden = true;
     btn.disabled = false; btn.textContent = "Sign in";
   }
 }
 $("signin").onclick = doSignIn;
 $("password").addEventListener("keydown", e => { if (e.key === "Enter") doSignIn(); });
 $("signout").onclick = () => {
-  session = null; $("ask-log").replaceChildren();
+  session = null; $("ask-log").replaceChildren(); $("ask-clear").hidden = true;
+  Object.values(charts).forEach(c => c?.destroy());
   $("app").hidden = true; $("topbar").hidden = true; $("login").hidden = false; $("password").value = "";
 };
 </script>
