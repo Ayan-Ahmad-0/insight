@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     ai_max_tool_rounds: int = 4
     price_in_per_m: float = 0.25           # copy from DocGuide's cost.py (USD per 1M input tokens)
     price_out_per_m: float = 1.50
+    # On-demand dashboard update (optional): lets an org admin trigger a rebuild through GitHub Actions
+    refresh_github_token: str = Field(default="", repr=False)   # fine-grained token, Actions read/write on this repo only
+    refresh_repo: str = "Ayan-Ahmad-0/insight"
+    refresh_workflow: str = "refresh-marts.yml"
+    refresh_ref: str = "main"
+    refresh_cooldown_s: int = 60
     @property
     def issuer(self) -> str:
         return f"{self.supabase_url.rstrip('/')}/auth/v1"

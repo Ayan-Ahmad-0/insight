@@ -111,11 +111,29 @@
   .a{white-space:pre-wrap;margin-top:6px;padding-left:12px;border-left:3px solid var(--green)}
   .a.err{border-left-color:var(--red)}
   .foot{margin-top:28px;text-align:center}
+
+  /* upload view */
+  .nav{display:inline-flex}
+  select{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+  .maps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:8px}
+  .maps label{margin:0 0 4px}
+  .step{margin-top:16px}
+  .tbl{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+  .tbl th,.tbl td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .errs{margin:8px 0 0;padding-left:18px;color:var(--red);font-size:14px}
+  progress{width:100%;height:10px;accent-color:var(--green);margin-top:12px}
+  #up-result{margin-top:12px}
+  #up-refresh{margin-top:8px}
+  .ok{color:var(--green)}
 </style>
 </head>
 <body>
 <header class="topbar" id="topbar" hidden>
   <div class="brand">Insight</div>
+  <div class="seg nav" role="group" aria-label="Pages">
+    <button id="nav-dash" aria-pressed="true">Dashboard</button>
+    <button id="nav-upload" aria-pressed="false" hidden>Upload data</button>
+  </div>
   <button id="signout" class="btn">Sign out</button>
 </header>
 
@@ -135,6 +153,7 @@
   </div>
 
   <div id="app" hidden>
+    <div id="view-dashboard">
     <div class="page-head">
       <div>
         <h1 id="org"></h1>
@@ -148,10 +167,17 @@
           <button data-days="90" aria-pressed="false">90 days</button>
         </div>
         <button id="csv" class="btn">Download CSV</button>
+        <button id="refresh-btn" class="btn" type="button" hidden>Update now</button>
+        <span id="refresh-msg" class="muted small" aria-live="polite"></span>
       </div>
     </div>
     <div id="status" class="muted small" aria-live="polite"></div>
     <div id="banner" class="banner" role="alert" hidden></div>
+    <div id="empty" class="panel" style="margin-top:16px" hidden>
+      <h3>No usage data yet</h3>
+      <p class="sub">Once events arrive, your numbers and charts appear here.</p>
+      <button id="empty-upload" class="btn primary" type="button" hidden>Upload your data</button>
+    </div>
 
     <section>
       <div class="sec-head"><h2>Latest day at a glance</h2><span id="digest-sub" class="muted small"></span></div>
@@ -218,6 +244,49 @@
     </section>
 
     <p class="foot muted small">Numbers update once a day after the morning data run.</p>
+    </div>
+
+    <div id="view-upload" hidden>
+      <div class="page-head">
+        <div>
+          <h1>Upload your data</h1>
+          <p class="muted">Add past usage from a CSV file. Uploading the same file twice never counts anything twice.</p>
+        </div>
+      </div>
+
+      <div class="panel step">
+        <h3>1. Get the template</h3>
+        <p class="sub">One row per event: who used which feature, and when. Use anonymous user ids, not email addresses.</p>
+        <button id="up-template" class="btn" type="button">Download template</button>
+      </div>
+
+      <div class="panel step">
+        <h3>2. Choose your file</h3>
+        <p class="sub">CSV, up to 5 MB and 20,000 rows per upload. Times like 2026-09-30T14:03:00Z or 2026-09-30 14:03.</p>
+        <input id="up-file" type="file" accept=".csv,text/csv" aria-label="CSV file">
+      </div>
+
+      <div id="up-map" class="panel step" hidden>
+        <h3>3. Match your columns</h3>
+        <div class="maps">
+          <div><label for="map-user">User</label><select id="map-user"></select></div>
+          <div><label for="map-feature">Feature or action</label><select id="map-feature"></select></div>
+          <div><label for="map-time">Time</label><select id="map-time"></select></div>
+          <div><label for="map-id">Event id (optional)</label><select id="map-id"></select></div>
+        </div>
+        <label style="margin-top:14px;font-weight:400"><input id="up-utc" type="checkbox" checked> Times without a timezone are in UTC</label>
+      </div>
+
+      <div class="panel step">
+        <h3>4. Check and import</h3>
+        <div id="up-report" class="muted">Choose a file to see a check of its rows.</div>
+        <div id="up-preview"></div>
+        <div style="margin-top:14px"><button id="up-import" class="btn primary" type="button" disabled>Import</button></div>
+        <progress id="up-progress" value="0" max="1" hidden></progress>
+        <div id="up-result" aria-live="polite"></div>
+        <div id="up-refresh" aria-live="polite"></div>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -228,6 +297,7 @@ const CONFIG = {
   ANON_KEY: "sb_publishable_z8smYxnbucH7OdWNpBM0oQ_axOX3aQ4"      // public by design. Never put the secret key here.
 };
 let session = null;
+const RT_KEY = "insight_rt";
 const charts = {};
 const state = {days: 30, metric: "active", daily: [], prev: [], feats: [], showAll: false, range: null};
 
@@ -248,6 +318,7 @@ async function authCall(grant, body) {
     body: JSON.stringify(body)});
   if (!r.ok) throw new Error("Sign-in failed. Check your email and password.");
   session = await r.json();
+  try { sessionStorage.setItem(RT_KEY, session.refresh_token); } catch (e) {}
 }
 
 async function api(path, opts = {}, retried = false) {
@@ -301,6 +372,8 @@ function summarize(rows) {
 function renderHeader(me) {
   $("org").textContent = me.org_name;
   $("plan-line").textContent = `Product usage dashboard · ${pretty(me.plan)} plan`;
+  initUpload(me);
+  initRefresh(me);
 }
 
 function renderDigest(digest) {
@@ -457,6 +530,7 @@ async function loadRange() {
     state.feats = feats; state.range = cur;
     $("range-label").textContent = `${cur.from} to ${cur.to} (UTC)`;
     $("events-btn").hidden = !hasEvents();
+    $("empty").hidden = state.daily.length > 0 || state.feats.length > 0;
     if (!hasEvents() && state.metric === "events") setMetric("active", false);
     drawTrend(); renderTrendStats(); drawWeekday(); renderFeatures(); renderRevenue(mrr);
     const last = state.daily.length ? day10(state.daily[state.daily.length - 1].usage_date) : "no data";
@@ -564,10 +638,44 @@ async function doSignIn() {
 $("signin").onclick = doSignIn;
 $("password").addEventListener("keydown", e => { if (e.key === "Enter") doSignIn(); });
 $("signout").onclick = () => {
-  session = null; $("ask-log").replaceChildren(); $("ask-clear").hidden = true;
+  forgetSession(); $("ask-log").replaceChildren(); $("ask-clear").hidden = true; resetUpload();
   Object.values(charts).forEach(c => c?.destroy());
   $("app").hidden = true; $("topbar").hidden = true; $("login").hidden = false; $("password").value = "";
 };
+
+// ----- keep the session across page refreshes (this tab only) -----
+function forgetSession() {
+  const s = session; session = null;
+  try { sessionStorage.removeItem(RT_KEY); } catch (e) {}
+  if (s) fetch(`${CONFIG.SUPABASE_URL}/auth/v1/logout?scope=local`, {
+    method: "POST", headers: {apikey: CONFIG.ANON_KEY, Authorization: `Bearer ${s.access_token}`}}).catch(() => {});
+}
+
+function showLogin(msg) {
+  $("login").hidden = false; $("app").hidden = true; $("topbar").hidden = true;
+  $("login-err").textContent = msg || "";
+}
+
+async function resume() {
+  let rt = null;
+  try { rt = sessionStorage.getItem(RT_KEY); } catch (e) {}
+  if (!rt || session) return;                       // nothing saved, or the user already signed in
+  $("login").hidden = true; $("app").hidden = false; $("topbar").hidden = false;
+  $("status").textContent = "Restoring your session… the server may be waking up, this can take up to a minute.";
+  try {
+    await authCall("refresh_token", {refresh_token: rt});
+  } catch (e) {
+    if (e instanceof TypeError) { showLogin("Couldn't reach the server. Refresh the page to try again."); return; }
+    try { sessionStorage.removeItem(RT_KEY); } catch (_) {}
+    showLogin(""); return;
+  }
+  try { await loadAll(); }
+  catch (e) { showLogin(e.message); }              // keeps the saved session, so refreshing again retries
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", resume);
+else resume();
 </script>
+<script src="upload.js"></script>
+<script src="refresh.js"></script>
 </body>
 </html>

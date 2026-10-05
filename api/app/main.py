@@ -6,10 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import errors
 from .config import settings
 from .db import pool
-from .routers import events, meta, metrics
 from fastapi.responses import JSONResponse
 from app.ai.analyst import AIError
 from app.routers import ask as ask_router
+from .routers import events, meta, metrics, refresh
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(message)s")
 log = logging.getLogger("insight")
@@ -68,3 +68,4 @@ app.include_router(meta.router)
 app.include_router(metrics.router)
 app.include_router(events.router)
 app.include_router(ask_router.router)
+app.include_router(refresh.router)

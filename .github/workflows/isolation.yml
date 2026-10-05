@@ -35,7 +35,7 @@ jobs:
       - name: Isolation tests
         run: >
           pytest tests/test_rls_coverage.py tests/test_isolation.py
-          tests/test_ingest.py tests/test_ai_isolation.py
+          tests/test_ingest.py tests/test_ai_isolation.py tests/test_refresh.py
           -q --junitxml=report.xml
       - name: Report
         if: always()

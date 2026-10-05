@@ -65,7 +65,9 @@ def main():
                 sys.exit("--reset deletes all events. Add --yes to confirm (dev project only).")
             conn.execute("truncate raw.feature_events, raw.subscription_events restart identity")
 
-        has_events = conn.execute("select exists(select 1 from raw.feature_events)").fetchone()[0]
+        has_events = conn.execute(
+            "select exists(select 1 from raw.feature_events e join app.orgs o on o.id = e.org_id"
+            " where o.data_source = 'synthetic')").fetchone()[0]
         if args.backfill_days:
             if has_events:
                 sys.exit("events already exist. Use --reset --yes first, or drop --backfill-days.")
@@ -74,14 +76,16 @@ def main():
             start = end = dt.date.fromisoformat(args.date)
         else:
             latest = conn.execute(
-                "select (max(occurred_at) at time zone 'UTC')::date from raw.feature_events"
+                "select (max(e.occurred_at) at time zone 'UTC')::date from raw.feature_events e"
+                " join app.orgs o on o.id = e.org_id where o.data_source = 'synthetic'"
             ).fetchone()[0]
             start = (latest + dt.timedelta(days=1)) if latest else end
         if start > end:
             print("already up to date")
             return
 
-        orgs = dict(conn.execute("select id, plan from app.orgs order by id").fetchall())
+        orgs = dict(conn.execute(
+            "select id, plan from app.orgs where data_source = 'synthetic' order by id").fetchall())
         members = defaultdict(list)
         for org, uid in conn.execute("select org_id, user_id from app.org_members"):
             members[org].append(uid)
