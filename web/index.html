@@ -112,6 +112,41 @@
   .a.err{border-left-color:var(--red)}
   .foot{margin-top:28px;text-align:center}
 
+  .demo-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .demo-overlay[hidden] { display: none; }
+  .demo-modal {
+    background: var(--surface); color: var(--ink);
+    width: 100%; max-width: 380px;
+    border: 1px solid var(--line); border-radius: 12px; padding: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    font-family: inherit;
+  }
+  .demo-modal h3 { margin: 0 0 6px; font-size: 18px; }
+  .demo-modal p { margin: 0 0 16px; font-size: 14px; color: var(--muted); }
+  .demo-cred {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px; font-size: 14px;
+  }
+  .demo-cred code { word-break: break-all; }
+  .demo-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .demo-actions button {
+    flex: 1; padding: 10px; border-radius: 8px; border: 0;
+    font-size: 14px; cursor: pointer;
+  }
+  .demo-primary { background: var(--green); color: var(--on-green); }
+  .demo-secondary { background: var(--line); color: var(--ink); }
+  .demo-reopen {
+    position: fixed; bottom: 16px; right: 16px; z-index: 999;
+    padding: 8px 14px; border-radius: 999px; border: 0;
+    background: var(--green); color: var(--on-green); font-size: 13px; cursor: pointer;
+  }
+
   /* upload view */
   .nav{display:inline-flex}
   select{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
@@ -677,5 +712,52 @@ else resume();
 </script>
 <script src="upload.js"></script>
 <script src="refresh.js"></script>
+<div class="demo-overlay" id="demoOverlay">
+  <div class="demo-modal" role="dialog" aria-labelledby="demoTitle">
+    <h3 id="demoTitle">Try the live demo</h3>
+    <p>This is a portfolio project. Use this test account to explore the dashboard and AI analyst. It only contains seeded, fake data.</p>
+    <div class="demo-cred"><span>Email</span><code>you+test6@example.com</code></div>
+    <div class="demo-cred"><span>Password</span><code>Q0Wvo34w9aiMuLqi</code></div>
+    <div class="demo-actions">
+      <button class="demo-primary" id="demoFill">Fill login for me</button>
+      <button class="demo-secondary" id="demoClose">Close</button>
+    </div>
+  </div>
+</div>
+<button class="demo-reopen" id="demoReopen">Demo login</button>
+<script>
+const DEMO_EMAIL = "you+test6@example.com";
+const DEMO_PASSWORD = "Q0Wvo34w9aiMuLqi";
+
+const overlay = document.getElementById("demoOverlay");
+const loginScreen = document.getElementById("login");
+const demoReopen = document.getElementById("demoReopen");
+const DEMO_DISMISSED_KEY = "insight_demo_dismissed";
+const openDemo = () => (overlay.hidden = false);
+const closeDemo = () => {
+  overlay.hidden = true;
+  try { sessionStorage.setItem(DEMO_DISMISSED_KEY, "true"); } catch (e) {}
+};
+try { overlay.hidden = sessionStorage.getItem(DEMO_DISMISSED_KEY) === "true"; } catch (e) {}
+const syncDemoReopenVisibility = () => { demoReopen.hidden = loginScreen.hidden; };
+new MutationObserver(syncDemoReopenVisibility).observe(loginScreen, {
+  attributes: true, attributeFilter: ["hidden"]
+});
+syncDemoReopenVisibility();
+
+document.getElementById("demoFill").addEventListener("click", () => {
+  const email = document.getElementById("email");
+  const password = document.getElementById("password");
+  email.value = DEMO_EMAIL;
+  password.value = DEMO_PASSWORD;
+  // so frameworks/validators notice the change
+  email.dispatchEvent(new Event("input", { bubbles: true }));
+  password.dispatchEvent(new Event("input", { bubbles: true }));
+  closeDemo();
+});
+document.getElementById("demoClose").addEventListener("click", closeDemo);
+demoReopen.addEventListener("click", openDemo);
+overlay.addEventListener("click", (e) => { if (e.target === overlay) closeDemo(); });
+</script>
 </body>
 </html>
