@@ -16,10 +16,13 @@ A multi-tenant backend for a SaaS client with ~40 business customers. It ingests
 
 **Live demo:** [Web app](https://insight-1-g4j1.onrender.com) · [API](https://insight-sxrc.onrender.com)
 
-A popup on the sign-in screen fills in a test account that belongs to a seeded demo organisation with fake data.
+---
+
+## 🔑 Demo Access
+
+Open the live app and use the **Demo login** popup on the sign-in screen. It fills in a test account that belongs to a seeded demo organisation with fake data, so you can explore the dashboard, upload a CSV, and ask the AI analyst questions.
 
 ---
-A popup on the sign-in screen fills in a test account that belongs to a seeded demo organisation with fake data.
 
 ## 📋 Overview
 
@@ -31,24 +34,25 @@ Insight is the capstone of a four-week build. It combines a data pipeline, a gro
 4. **Answers questions** through an AI analyst (Gemini) that has no SQL access and calls five fixed tools, each running under the caller's own RLS-scoped token
 5. **Controls AI spend** with a cost ledger (`ai.calls`), a per-org daily budget, and per-org and global kill switches
 6. **Serves** a clean FastAPI contract for a future front-end developer, plus a plain web dashboard as the client
-7. **Deletes completely** when a customer leaves: `delete_org` removes all of an org's data and issues a receipt
-8. **Runs like production**: scheduled jobs on GitHub Actions, an ops check, and a runbook from an unscheduled incident drill
+7. **Onboards customers** without public self-signup: the owner creates an org and its first user with a local script, then the customer **self-serves by uploading CSV data** on the web page
+8. **Deletes completely** when a customer leaves: `delete_org` removes all of an org's data and issues a receipt
+9. **Runs like production**: scheduled jobs on GitHub Actions, an ops check, and a runbook from an unscheduled incident drill
 
 ---
 
 ## 🏗️ Architecture
 
-**Events** → **Supabase Postgres (RLS)** → **dbt marts + daily digest** → **FastAPI (Render)** → **Web dashboard + AI analyst (Gemini)**
+**Events / CSV uploads** → **Supabase Postgres (RLS)** → **dbt marts + daily digest** → **FastAPI (Render)** → **Web dashboard + AI analyst (Gemini)**
 
 | Layer | Purpose | Tech |
 | --- | --- | --- |
-| **Ingest** | Feature + subscription events per organisation | Python, Postgres |
+| **Ingest** | Feature + subscription events per organisation, plus customer CSV uploads | Python, Postgres |
 | **Storage & auth** | Multi-tenant schema, RLS policies, users and orgs | Supabase |
 | **Transform** | Daily marts and morning digest | dbt |
 | **Orchestration** | Scheduled pipeline runs and ops checks | GitHub Actions (cron) |
 | **API** | Versioned contract for the dashboard and future front end | FastAPI, Docker, Render |
 | **AI analyst** | Plain-English questions over a tenant's own data | Gemini, five fixed tools |
-| **Client** | Dashboard served as a static site | HTML, JavaScript, Render Static Site |
+| **Client** | Dashboard and CSV upload page served as a static site | HTML, JavaScript, Render Static Site |
 
 ### Architecture Diagram
 
@@ -59,6 +63,7 @@ Insight is the capstone of a four-week build. It combines a data pipeline, a gro
 
 - **Database & auth:** Supabase (managed Postgres), with RLS so every query is scoped to the caller's organisation
 - **Pipeline:** Python ingestion plus dbt models for daily marts; digest generated after each run
+- **Customer data upload:** CSV upload from the web page through the API, scoped to the uploader's organisation
 - **Orchestration:** GitHub Actions cron (hosted and free), chosen over Airflow to keep the operational footprint small
 - **API:** FastAPI in a Docker web service on Render
 - **Web client:** Single-page dashboard (`web/index.html`) deployed as a Render Static Site
@@ -69,11 +74,9 @@ Insight is the capstone of a four-week build. It combines a data pipeline, a gro
 
 ## 📊 Dashboard
 
-<!-- TODO: add screenshots -->
 ![Dashboard](images/dashboard_1.png)
 ![Dashboard](images/dashboard_2.png)
 ![Dashboard](images/dashboard_3.png)
-
 
 ---
 
@@ -132,18 +135,18 @@ canceled-org edge cases, out-of-scope, and 11 attack prompts.
 | Average cost per question | ~$0.0004 |
 | Median / p95 latency | 5.9 s / 8.9 s |
 
-<!-- TODO: add image -->
-![Evaluation Report](images/eval_report.png)
 
 **Limits:** the eval set is small and uses two test orgs, answers can vary
 between runs, and the budget check can overshoot by one question.
 
 ---
 
-## 🗑️ Offboarding & Onboarding
+## 🧭 Onboarding & Offboarding
 
-- **Delete an organisation:** `delete_org` removes the org and all its data, rebuilds the marts without it, and prints a **receipt** as proof
-- **Onboard an organisation:** the owner creates the org and first user with a local onboarding script. The customer then self-serves by uploading CSV data on the web page. There is no public self-signup.
+- **Onboard an organisation:** there is no public self-signup. The owner creates the org and its first user with a local onboarding script (`scripts/onboard.py`).
+- **Self-serve data upload:** once signed in, the customer uploads their own CSV data on the web page, and it lands in their organisation only, protected by the same RLS policies as everything else.
+- **Delete an organisation:** `delete_org` removes the org and all its data, rebuilds the marts without it, and prints a **receipt** as proof.
+
 
 ---
 
@@ -152,9 +155,6 @@ between runs, and the budget check can overshoot by one question.
 - **Scheduled runs:** pipeline and digest via GitHub Actions cron
 - **Ops check:** `ops_check.py` runs on a schedule, and a failing step surfaces problems in GitHub Actions
 - **Incident drill:** an unscheduled incident was handled during a production-style run, with a runbook written afterwards (see `docs/runbook.md`)
-
-<!-- TODO: add image of GitHub Actions runs -->
-![Operations](images/operations.png)
 
 ---
 
@@ -168,9 +168,9 @@ insight/
 ├── .env.example
 ├── Dockerfile
 │
-├── api/                    # FastAPI app (routes, auth, analyst endpoint)
+├── api/                    # FastAPI app (routes, auth, analyst + CSV upload endpoints)
 ├── web/
-│   └── index.html          # Dashboard client
+│   └── index.html          # Dashboard + upload client
 ├── pipeline/               # Ingestion + digest jobs
 ├── dbt/                    # Models for daily marts
 ├── supabase/               # Schema, RLS policies, seed data
@@ -190,7 +190,6 @@ insight/
 
 ## ⚙️ Configuration
 
-<!-- TODO: confirm env variable names against .env.example -->
 Create a `.env` file in the project root (mirrored in Render environment settings when deployed):
 
 ```
@@ -238,24 +237,9 @@ pytest tests/isolation
 
 - Proved tenant isolation with automated attack tests that run in CI, instead of relying on policy review alone
 - Used the analyst eval to catch three real bugs (guessed dates, wrong sums, a missing citation) and fixed each in the tools rather than the prompt alone
+- Opened customer data upload without opening public signup: the owner onboards each org, and uploads are scoped to the uploader's organisation
 - Chose GitHub Actions cron over Airflow to keep orchestration hosted, free, and simple
 - Fixed a CORS and localhost configuration issue between the Render static site and the API
 - Worked around port 8080 being blocked on Windows by serving the web page on 8088
 - Replaced a Discord alert webhook with an ops check that fails the GitHub Actions step visibly
-<!-- TODO: add the Day 6 incident and what fixed it -->
 
----
-
-## 🛠️ Future Improvements
-
-- Self-serve CSV upload for customers
-- Richer dashboard metrics and filters
-- Larger eval set covering more than two test orgs
-- Front-end handoff with published API documentation
-<!-- TODO: add anything else planned -->
-
----
-
-## 👤 Author
-
-**Ayan Ahmad**: Data Engineer · [GitHub](https://github.com/Ayan-Ahmad-0)
