@@ -89,8 +89,6 @@ The core requirement: **no customer can ever see another customer's data.**
 - **CI gate:** the suite runs on a throwaway Postgres for every pull request, so a bad policy can't merge
 - **AI analyst scoping:** every tool call runs under the caller's token, and the eval set includes attack prompts aimed at cross-tenant leaks
 
-<!-- TODO: add image of isolation test output / CI run -->
-![Isolation Tests](images/isolation_tests.png)
 
 ---
 
