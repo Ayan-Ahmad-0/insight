@@ -39,8 +39,10 @@ def orgs():
         rows = conn.execute("""
             select distinct on (m.org_id) m.org_id, u.email
             from app.org_members m
+            join app.orgs o on o.id = m.org_id
             join auth.users u on u.id = m.user_id
             join analytics.morning_digest d on d.org_id = m.org_id
+            where o.data_source = 'synthetic'
             order by m.org_id, u.email""").fetchall()
     (a_id, a_mail), (b_id, b_mail) = rows[0], rows[1]
     return {"A": {"id": a_id, "token": _login(a_mail)},
