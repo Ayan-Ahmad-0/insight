@@ -49,7 +49,7 @@ def _dispatch(org_id: str) -> None:
         log.exception("refresh dispatch failed")
         raise ApiError(502, "refresh_failed", "Could not start the update. Please try again later.")
     if r.status_code != 204:
-        log.warning("refresh dispatch rejected by GitHub: %s", r.status_code)
+        log.warning("refresh dispatch rejected by GitHub: %s %s", r.status_code, r.text[:200])
         raise ApiError(502, "refresh_failed", "Could not start the update. Please try again later.")
 
 
