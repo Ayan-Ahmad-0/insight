@@ -16,6 +16,8 @@ A multi-tenant backend for a SaaS client with ~40 business customers. It ingests
 
 **Live demo:** [Web app](https://insight-1-g4j1.onrender.com) · [API](https://insight-sxrc.onrender.com)
 
+A popup on the sign-in screen fills in a test account that belongs to a seeded demo organisation with fake data.
+
 ---
 A popup on the sign-in screen fills in a test account that belongs to a seeded demo organisation with fake data.
 
