@@ -70,8 +70,10 @@ Insight is the capstone of a four-week build. It combines a data pipeline, a gro
 ## 📊 Dashboard
 
 <!-- TODO: add screenshots -->
-![Dashboard](images/dashboard.png)
-![Morning Digest](images/morning_digest.png)
+![Dashboard](images/dashboard_1.png)
+![Dashboard](images/dashboard_2.png)
+![Dashboard](images/dashboard_3.png)
+
 
 ---
 
