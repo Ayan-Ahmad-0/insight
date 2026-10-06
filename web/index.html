@@ -191,7 +191,7 @@
     <div id="view-dashboard">
     <div class="page-head">
       <div>
-        <h1 id="org"></h1>
+        <h1 id="org">Insight: Multi-Tenant Data &amp; AI Platform</h1>
         <p class="muted" id="plan-line"></p>
       </div>
       <div class="toolbar">
@@ -405,7 +405,7 @@ function summarize(rows) {
 
 // ----- sections -----
 function renderHeader(me) {
-  $("org").textContent = me.org_name;
+  $("org").textContent = "Insight: Multi-Tenant Data & AI Platform";
   $("plan-line").textContent = `Product usage dashboard · ${pretty(me.plan)} plan`;
   initUpload(me);
   initRefresh(me);
