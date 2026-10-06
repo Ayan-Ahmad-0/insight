@@ -164,7 +164,7 @@
 </head>
 <body>
 <header class="topbar" id="topbar" hidden>
-  <div class="brand">Insight</div>
+  <div class="brand">Insight: Multi-Tenant Data &amp; AI Platform</div>
   <div class="seg nav" role="group" aria-label="Pages">
     <button id="nav-dash" aria-pressed="true">Dashboard</button>
     <button id="nav-upload" aria-pressed="false" hidden>Upload data</button>
@@ -191,7 +191,7 @@
     <div id="view-dashboard">
     <div class="page-head">
       <div>
-        <h1 id="org">Insight: Multi-Tenant Data &amp; AI Platform</h1>
+        <h1 id="org"></h1>
         <p class="muted" id="plan-line"></p>
       </div>
       <div class="toolbar">
@@ -405,7 +405,7 @@ function summarize(rows) {
 
 // ----- sections -----
 function renderHeader(me) {
-  $("org").textContent = "Insight: Multi-Tenant Data & AI Platform";
+  $("org").textContent = me.org_name;
   $("plan-line").textContent = `Product usage dashboard · ${pretty(me.plan)} plan`;
   initUpload(me);
   initRefresh(me);
