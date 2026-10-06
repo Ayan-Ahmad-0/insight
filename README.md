@@ -77,7 +77,8 @@ Insight is the capstone of a four-week build. It combines a data pipeline, a gro
 ![Dashboard](images/dashboard_1.png)
 ![Dashboard](images/dashboard_2.png)
 ![Dashboard](images/dashboard_3.png)
-
+![Dashboard](images/dashboard_4.png)
+![Dashboard](images/dashboard_5.png)
 ---
 
 ## 🔒 Tenant Isolation
