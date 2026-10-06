@@ -20,8 +20,7 @@ A multi-tenant backend for a SaaS client with ~40 business customers. It ingests
 ## 🔑 Demo Access
 
 Open the live app and use the **Demo login** popup on the sign-in screen. It fills in a test account that belongs to a seeded demo organisation with fake data, so you can explore the dashboard, upload a CSV, and ask the AI analyst questions.
-
-**Live demo:** [Web app](https://insight-1-g4j1.onrender.com) · [API](https://insight-sxrc.onrender.com)
+Live demo: [Web app](https://insight-1-g4j1.onrender.com) · [API](https://insight-sxrc.onrender.com)
 ---
 
 ## 📋 Overview
