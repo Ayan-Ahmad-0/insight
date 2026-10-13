@@ -17,14 +17,14 @@ A multi-tenant backend for a SaaS client with ~40 business customers. It ingests
 
 ---
 
-## 🔑 Demo Access
+## Demo Access
 
 Open the live app and use the **Demo login** popup on the sign-in screen. It fills in a test account that belongs to a seeded demo organisation with fake data, so you can explore the dashboard, upload a CSV, and ask the AI analyst questions.
 
 Live demo: [Web app](https://insight-1-g4j1.onrender.com)
 ---
 
-## 📋 Overview
+## Overview
 
 Insight is the capstone of a four-week build. It combines a data pipeline, a grounded AI assistant, and a deployed service into one production-style platform. It:
 
@@ -40,7 +40,7 @@ Insight is the capstone of a four-week build. It combines a data pipeline, a gro
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 **Events / CSV uploads** → **Supabase Postgres (RLS)** → **dbt marts + daily digest** → **FastAPI (Render)** → **Web dashboard + AI analyst (Gemini)**
 
@@ -72,7 +72,7 @@ Insight is the capstone of a four-week build. It combines a data pipeline, a gro
 
 ---
 
-## 📊 Dashboard
+## Dashboard
 
 ![Dashboard](images/dashboard_1.png)
 ![Dashboard](images/dashboard_2.png)
@@ -81,7 +81,7 @@ Insight is the capstone of a four-week build. It combines a data pipeline, a gro
 ![Dashboard](images/dashboard_5.png)
 ---
 
-## 🔒 Tenant Isolation
+## Tenant Isolation
 
 The core requirement: **no customer can ever see another customer's data.**
 
@@ -93,7 +93,7 @@ The core requirement: **no customer can ever see another customer's data.**
 
 ---
 
-## 🤖 AI Analyst
+## AI Analyst
 
 Customers ask plain-English questions about their own usage. The model has no SQL
 access and never sees an org id: it calls five fixed tools (daily usage, feature
@@ -114,7 +114,7 @@ trace). There is a per-org kill switch, a per-org daily budget and a global swit
 
 ---
 
-## ✅ Evaluation
+## Evaluation
 
 37 questions: metrics checked against raw-table SQL, cited definitions,
 canceled-org edge cases, out-of-scope, and 11 attack prompts.
@@ -140,7 +140,7 @@ between runs, and the budget check can overshoot by one question.
 
 ---
 
-## 🧭 Onboarding & Offboarding
+## Onboarding & Offboarding
 
 - **Onboard an organisation:** there is no public self-signup. The owner creates the org and its first user with a local onboarding script (`scripts/onboard.py`).
 - **Self-serve data upload:** once signed in, the customer uploads their own CSV data on the web page, and it lands in their organisation only, protected by the same RLS policies as everything else.
@@ -149,7 +149,7 @@ between runs, and the budget check can overshoot by one question.
 
 ---
 
-## 🛡️ Operations
+## Operations
 
 - **Scheduled runs:** pipeline and digest via GitHub Actions cron
 - **Ops check:** `ops_check.py` runs on a schedule, and a failing step surfaces problems in GitHub Actions
@@ -157,7 +157,7 @@ between runs, and the budget check can overshoot by one question.
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 <!-- TODO: adjust to match the actual repo -->
 ```
@@ -187,7 +187,7 @@ insight/
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 Create a `.env` file in the project root (mirrored in Render environment settings when deployed):
 
@@ -203,7 +203,7 @@ ALLOWED_ORIGINS=http://localhost:8088
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ```bash
 # Clone the repo
@@ -232,7 +232,7 @@ pytest tests/isolation
 
 ---
 
-## 🚧 Challenges Solved
+## Challenges Solved
 
 - Proved tenant isolation with automated attack tests that run in CI, instead of relying on policy review alone
 - Used the analyst eval to catch three real bugs (guessed dates, wrong sums, a missing citation) and fixed each in the tools rather than the prompt alone
